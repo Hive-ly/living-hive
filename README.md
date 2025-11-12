@@ -4,14 +4,17 @@ A React library for visualizing interconnected stories using UMAP dimensionality
 
 ## Features
 
-- 🎨 Interactive hex grid visualization
-- 🤖 OpenAI integration for story embeddings
+- 🎨 Interactive hex grid visualization with zoom and pan
+- 🤖 OpenAI integration for story embeddings and theme generation
 - 🎯 Automatic theme extraction from stories
 - 🎨 Customizable color palettes (defaults to warm palette)
 - ♿ Full keyboard navigation and accessibility support
 - ⚡ Web worker-based UMAP computation for smooth performance
 - 🎭 Customizable story rendering
 - 🔄 Support for both client-side and server-side embedding generation
+- 💾 Pre-generated embeddings and themes support for faster loading
+- 🚀 Optimized batch API calls with retry logic and rate limiting
+- 📊 Theme legend with story counts
 
 ## Installation
 
@@ -50,6 +53,39 @@ function App() {
   )
 }
 ```
+
+### With Pre-generated Embeddings and Themes
+
+For faster loading and to avoid API calls, you can pre-generate embeddings and themes:
+
+```tsx
+import { LivingHive } from '@living-hive/react'
+
+// Pre-generated embeddings (Map<storyId, embedding>)
+const embeddings = new Map([
+  ['1', [0.1, 0.2, ...]], // 384-dimensional vector
+  ['2', [0.3, 0.4, ...]],
+])
+
+// Pre-generated themes
+const themes = [
+  { id: 'theme-1', label: 'Teamwork' },
+  { id: 'theme-2', label: 'Collaboration' },
+]
+
+function App() {
+  return (
+    <LivingHive
+      stories={stories}
+      openaiApiKey="" // Not needed when using pre-generated data
+      embeddings={embeddings}
+      themes={themes}
+    />
+  )
+}
+```
+
+**Note**: When using pre-generated embeddings and themes, no API calls are made. This is ideal for deployed examples or when you want to avoid API costs.
 
 ### With Custom Themes
 
@@ -142,6 +178,16 @@ const stories: MyStory[] = [
 />
 ```
 
+### Zoom and Pan
+
+The visualization supports interactive zoom and pan:
+
+- **Scroll wheel**: Zoom in/out (towards mouse cursor)
+- **Click and drag**: Pan around the visualization
+- **Auto-fit**: Automatically centers and zooms to fit all hexes on initial load
+
+The canvas has a visible background and border to show the visualization boundaries.
+
 ## API Reference
 
 ### `LivingHive` Component
@@ -151,17 +197,20 @@ const stories: MyStory[] = [
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `stories` | `Story<T>[]` | Yes | - | Array of stories to visualize |
-| `openaiApiKey` | `string` | Yes* | - | OpenAI API key (required if `apiEndpoint` not provided) |
+| `openaiApiKey` | `string` | Yes* | - | OpenAI API key (required if `apiEndpoint` not provided or when generating themes) |
 | `themes` | `Theme[]` | No | Auto-generated | Predefined themes/clusters |
 | `colorPalette` | `string[]` | No | Warm palette | Array of hex color strings |
 | `apiEndpoint` | `string` | No | - | Server endpoint for embedding generation |
+| `embeddings` | `Map<string, number[]>` | No | - | Pre-generated embeddings (Map of storyId to embedding vector) |
 | `onHexClick` | `(story, theme) => void` | No | - | Callback when a hex is clicked |
-| `renderStory` | `(story) => ReactNode` | No | Default renderer | Custom story renderer for popover |
+| `renderStory` | `(story) => ReactNode` | No | Default renderer | Custom story renderer for dialog |
 | `onError` | `(error) => void` | No | - | Error handler callback |
+| `onThemesChange` | `(themes) => void` | No | - | Callback when themes are generated/updated |
+| `onAssignmentsChange` | `(assignments) => void` | No | - | Callback when story-to-theme assignments change |
 | `className` | `string` | No | - | Additional CSS classes |
 | `config` | `Partial<PlacementConfig>` | No | - | Canvas/hex configuration |
 
-\* `openaiApiKey` is required unless `apiEndpoint` is provided.
+\* `openaiApiKey` is required unless `apiEndpoint` is provided, or when using pre-generated `embeddings` and `themes`.
 
 #### Types
 
@@ -204,11 +253,19 @@ const { generateThemesFromStories, assignStories, loading, error } = useThemes()
 const { computePlacement, loading, error } = useUMAPPlacement()
 ```
 
-## Keyboard Navigation
+## Interaction
+
+### Keyboard Navigation
 
 - **Arrow Keys**: Navigate between hexes
-- **Enter/Space**: Open popover for focused hex
-- **Escape**: Close popover and clear selection
+- **Enter/Space**: Open dialog for focused hex
+- **Escape**: Close dialog and clear selection
+
+### Mouse Controls
+
+- **Scroll Wheel**: Zoom in/out (towards cursor position)
+- **Click and Drag**: Pan around the visualization
+- **Click Hex**: Open dialog with story details
 
 ## Accessibility
 
@@ -286,25 +343,67 @@ export const handler: Handler = async (event) => {
 }
 ```
 
+## Development Scripts
+
+The project includes several utility scripts:
+
+```bash
+# Fetch stories from Reddit and sanitize with OpenAI
+npm run fetch-stories
+
+# Generate embeddings for sample stories (saves to mockEmbeddings.json)
+npm run regenerate-embeddings
+
+# Generate themes for sample stories (saves to mockThemes.json)
+npm run regenerate-themes
+```
+
+These scripts require an OpenAI API key in `.env.local`:
+
+```bash
+VITE_OPENAI_API_KEY=sk-your-key-here
+VITE_USE_MOCK_EMBEDDINGS=false  # Set to "true" to use pre-generated data
+```
+
 ## Examples
 
-See the `examples/` directory for complete working examples:
+See the `examples/` directory for a complete working example:
 
-- **Basic Example**: Simple usage with auto-generated themes
-- **With Themes**: Using predefined themes
-- **Server-Side**: Using a server endpoint for embeddings
+- **Basic Example**: Features stories from r/work Reddit, theme legend, zoom/pan controls, and support for pre-generated embeddings/themes
 
-To run the examples:
+To run the example:
 
 ```bash
 # Install dependencies (from project root)
 npm install
+
+# Set up environment variables (see .env.local.example)
+cp .env.local.example .env.local
+# Edit .env.local and add your OpenAI API key
 
 # Run the example app
 npm run dev
 ```
 
 The examples app will start at `http://localhost:5173`.
+
+### Using Mock Mode (No API Calls)
+
+To use pre-generated embeddings and themes:
+
+1. Generate the data once:
+   ```bash
+   npm run fetch-stories      # Fetch and sanitize stories
+   npm run regenerate-embeddings  # Generate embeddings
+   npm run regenerate-themes      # Generate themes
+   ```
+
+2. Set environment variable:
+   ```bash
+   VITE_USE_MOCK_EMBEDDINGS=true
+   ```
+
+3. Run the app - no API calls will be made!
 
 ## Deployment to Netlify
 
@@ -327,8 +426,12 @@ The default warm color palette includes:
 ## Performance Considerations
 
 - UMAP computation runs in a web worker to avoid blocking the UI
-- Embeddings are generated sequentially (consider server-side for large batches)
+- Embeddings use batch API calls (up to 100 stories per request) for efficiency
+- Built-in caching prevents duplicate embedding generation
+- Retry logic with exponential backoff handles rate limiting gracefully
+- Pre-generated embeddings/themes eliminate API calls entirely
 - Canvas rendering is optimized for smooth interactions
+- Zoom and pan are hardware-accelerated
 
 ## License
 

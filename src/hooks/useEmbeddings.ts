@@ -1,22 +1,40 @@
-import { useState, useCallback } from 'react'
-import type { BaseStory } from '../types'
-import { generateEmbeddings } from '../utils/embeddings'
+import {useState, useCallback, useRef} from "react";
+import type {BaseStory} from "../types";
+import {generateEmbeddings} from "../utils/embeddings";
 
 interface UseEmbeddingsReturn<T extends BaseStory> {
   generateEmbeddingsForStories: (
     stories: T[],
     apiKey: string,
     apiEndpoint?: string
-  ) => Promise<Map<string, number[]>>
-  loading: boolean
-  error: string | null
+  ) => Promise<Map<string, number[]>>;
+  loading: boolean;
+  error: string | null;
 }
 
 export function useEmbeddings<T extends BaseStory>(
   onError?: (error: Error) => void
 ): UseEmbeddingsReturn<T> {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cache: Map<cacheKey, Map<storyId, embedding>>
+  const cacheRef = useRef<Map<string, Map<string, number[]>>>(new Map());
+  // In-flight promises: Map<cacheKey, Promise>
+  const inFlightRef = useRef<Map<string, Promise<Map<string, number[]>>>>(
+    new Map()
+  );
+
+  const getCacheKey = useCallback(
+    (stories: T[], apiKey: string, apiEndpoint?: string) => {
+      const storyIds = stories
+        .map((s) => s.id)
+        .sort()
+        .join(",");
+      return `${storyIds}:${apiKey}:${apiEndpoint || "client"}`;
+    },
+    []
+  );
 
   const generateEmbeddingsForStories = useCallback(
     async (
@@ -24,43 +42,118 @@ export function useEmbeddings<T extends BaseStory>(
       apiKey: string,
       apiEndpoint?: string
     ): Promise<Map<string, number[]>> => {
-      setLoading(true)
-      setError(null)
+      const cacheKey = getCacheKey(stories, apiKey, apiEndpoint);
+      const storyIds =
+        stories
+          .map((s) => s.id)
+          .slice(0, 5)
+          .join(",") + (stories.length > 5 ? "..." : "");
 
-      try {
-        const embeddings = await generateEmbeddings(
-          stories,
-          apiKey,
-          apiEndpoint,
-          (err) => {
-            if (onError) {
-              onError(err)
-            }
-            setError(err.message)
+      console.log("[useEmbeddings] 🔍 Checking cache for embeddings", {
+        storyCount: stories.length,
+        storyIds: storyIds,
+        cacheKey: cacheKey.substring(0, 50) + "...",
+        cacheSize: cacheRef.current.size,
+        inFlightCount: inFlightRef.current.size,
+      });
+
+      // Check cache first
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached) {
+        console.log(
+          "[useEmbeddings] ✅ Cache hit! Returning cached embeddings",
+          {
+            count: cached.size,
+            storyIds: storyIds,
           }
-        )
-
-        setLoading(false)
-        return embeddings
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err))
-        setError(error.message)
-        setLoading(false)
-
-        if (onError) {
-          onError(error)
-        }
-
-        throw error
+        );
+        return cached;
       }
+
+      // Check in-flight promise
+      const inFlight = inFlightRef.current.get(cacheKey);
+      if (inFlight) {
+        console.log(
+          "[useEmbeddings] ⏳ In-flight request found, reusing promise",
+          {
+            storyIds: storyIds,
+          }
+        );
+        return inFlight;
+      }
+
+      // Create new request
+      console.log("[useEmbeddings] 🚀 Creating new embedding request", {
+        storyCount: stories.length,
+        storyIds: storyIds,
+        apiEndpoint: apiEndpoint || "client",
+      });
+      setLoading(true);
+      setError(null);
+
+      const promise = (async () => {
+        const startTime = Date.now();
+        try {
+          const embeddings = await generateEmbeddings(
+            stories,
+            apiKey,
+            apiEndpoint,
+            (err) => {
+              console.error(
+                "[useEmbeddings] ❌ Error generating embedding for story",
+                {
+                  error: err.message,
+                }
+              );
+              if (onError) {
+                onError(err);
+              }
+              setError(err.message);
+            }
+          );
+
+          // Cache the result
+          cacheRef.current.set(cacheKey, embeddings);
+          // Remove from in-flight
+          inFlightRef.current.delete(cacheKey);
+          setLoading(false);
+
+          console.log("[useEmbeddings] ✅ Embeddings generated and cached", {
+            count: embeddings.size,
+            duration: `${Date.now() - startTime}ms`,
+            cacheSize: cacheRef.current.size,
+          });
+
+          return embeddings;
+        } catch (err) {
+          // Remove from in-flight on error
+          inFlightRef.current.delete(cacheKey);
+          const error = err instanceof Error ? err : new Error(String(err));
+          setError(error.message);
+          setLoading(false);
+
+          console.error("[useEmbeddings] ❌ Failed to generate embeddings", {
+            error: error.message,
+            duration: `${Date.now() - startTime}ms`,
+          });
+
+          if (onError) {
+            onError(error);
+          }
+
+          throw error;
+        }
+      })();
+
+      inFlightRef.current.set(cacheKey, promise);
+      return promise;
     },
-    [onError]
-  )
+    [onError, getCacheKey]
+  );
 
   return {
     generateEmbeddingsForStories,
     loading,
     error,
-  }
+  };
 }
-

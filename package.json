@@ -21,7 +21,10 @@
     "build": "tsc && vite build --mode library",
     "build:examples": "vite build",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "regenerate-embeddings": "tsx scripts/regenerate-embeddings.ts",
+    "regenerate-themes": "tsx scripts/regenerate-themes.ts",
+    "fetch-stories": "tsx scripts/fetch-reddit-stories.ts"
   },
   "keywords": [
     "react",
@@ -42,6 +45,7 @@
     "tailwind-merge": "^2.0.0"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",
     "umap-js": "^1.3.3",
     "react": "^18.2.0",
@@ -56,10 +60,11 @@
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "dotenv": "^16.3.1",
     "postcss": "^8.4.32",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.6.4"
   }
 }
-

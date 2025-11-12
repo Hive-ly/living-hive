@@ -31,3 +31,4 @@ dist-ssr
 # Keep example file
 !.env.local.example
 
+.cursor

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "career_development",
+    "label": "Career Development and Improvement"
+  },
+  {
+    "id": "workplace_dynamics",
+    "label": "Workplace Dynamics and Culture"
+  },
+  {
+    "id": "job_transition",
+    "label": "Job Transition and Salary Negotiation"
+  },
+  {
+    "id": "work_life_balance",
+    "label": "Work-Life Balance and Personal Well-being"
+  },
+  {
+    "id": "professional_growth",
+    "label": "Professional Growth and Performance"
+  },
+  {
+    "id": "team_management",
+    "label": "Team Management and Leadership"
+  },
+  {
+    "id": "workplace_conflict",
+    "label": "Workplace Conflict and Resolution"
+  },
+  {
+    "id": "ethical_dilemmas",
+    "label": "Ethical Dilemmas and Decision Making"
+  },
+  {
+    "id": "remote_work",
+    "label": "Remote Work and Adaptation"
+  },
+  {
+    "id": "job_security",
+    "label": "Job Security and Market Trends"
+  }
+]

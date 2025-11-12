@@ -24,11 +24,9 @@ This will start a development server (usually at `http://localhost:5173`).
 
 ### 3. Test the Examples
 
-The example app includes three examples:
+The example app includes a comprehensive example:
 
-- **Basic Example**: Auto-generated themes from stories (requires OpenAI API key in `.env.local`)
-- **With Themes**: Uses predefined themes
-- **Server-Side**: Configure a server endpoint for embeddings
+- **Basic Example**: Features stories from r/work Reddit, theme legend, zoom/pan controls, and support for both dynamic and pre-generated embeddings/themes
 
 ### 4. Set Up OpenAI API Key
 
@@ -43,6 +41,24 @@ To test the client-side embedding generation, you'll need an OpenAI API key:
    ```
 
 **Note**: Keep your API key secure! Never commit `.env.local` to version control. The `.env.local.example` file shows the required format.
+
+### Using Mock Mode (No API Calls)
+
+To test without making API calls:
+
+1. Generate pre-computed data:
+   ```bash
+   npm run fetch-stories          # Fetch stories from Reddit
+   npm run regenerate-embeddings  # Generate embeddings
+   npm run regenerate-themes      # Generate themes
+   ```
+
+2. Set environment variable:
+   ```bash
+   VITE_USE_MOCK_EMBEDDINGS=true
+   ```
+
+3. Run the app - it will use pre-generated data with no API calls!
 
 ## Testing the Library Build
 
