@@ -24,8 +24,10 @@ npm install @living-hive/react
 This library requires the following peer dependencies:
 
 ```bash
-npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge @radix-ui/react-popover
+npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge
 ```
+
+**Note**: `@radix-ui/react-popover` is bundled with the library and does not need to be installed separately.
 
 ## Quick Start
 
@@ -252,6 +254,8 @@ And returns:
 }
 ```
 
+**Note**: If you're using server-side embeddings (`apiEndpoint`), you can also provide a server-side theme generation endpoint. The library will automatically call `{apiEndpoint.replace('/embeddings', '/themes')}` for theme generation if using server-side mode.
+
 Example Netlify Function:
 
 ```typescript
@@ -293,10 +297,14 @@ See the `examples/` directory for complete working examples:
 To run the examples:
 
 ```bash
-cd examples
+# Install dependencies (from project root)
 npm install
+
+# Run the example app
 npm run dev
 ```
+
+The examples app will start at `http://localhost:5173`.
 
 ## Deployment to Netlify
 
@@ -304,7 +312,7 @@ The examples directory includes a `netlify.toml` configuration file. To deploy:
 
 1. Push your code to a Git repository
 2. Connect the repository to Netlify
-3. Set build command: `cd examples && npm install && npm run build`
+3. Set build command: `npm install && npm run build:examples`
 4. Set publish directory: `examples/dist`
 
 ## Default Color Palette

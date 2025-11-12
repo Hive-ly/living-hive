@@ -8,23 +8,15 @@ The easiest way to test the library is through the example app:
 
 ### 1. Install Dependencies
 
-First, install dependencies for the main library:
+Install dependencies from the project root:
 
 ```bash
-npm install
-```
-
-Then install dependencies for the examples:
-
-```bash
-cd examples
 npm install
 ```
 
 ### 2. Run the Example App
 
 ```bash
-cd examples
 npm run dev
 ```
 
@@ -34,20 +26,23 @@ This will start a development server (usually at `http://localhost:5173`).
 
 The example app includes three examples:
 
-- **Basic Example**: Enter your OpenAI API key to see auto-generated themes
+- **Basic Example**: Auto-generated themes from stories (requires OpenAI API key in `.env.local`)
 - **With Themes**: Uses predefined themes
 - **Server-Side**: Configure a server endpoint for embeddings
 
-### 4. Get an OpenAI API Key
+### 4. Set Up OpenAI API Key
 
 To test the client-side embedding generation, you'll need an OpenAI API key:
 
 1. Go to https://platform.openai.com/api-keys
 2. Create a new API key
 3. Copy the key (starts with `sk-`)
-4. Enter it in the example app
+4. Create a `.env.local` file in the project root:
+   ```bash
+   VITE_OPENAI_API_KEY=sk-your-key-here
+   ```
 
-**Note**: Keep your API key secure! Never commit it to version control.
+**Note**: Keep your API key secure! Never commit `.env.local` to version control. The `.env.local.example` file shows the required format.
 
 ## Testing the Library Build
 
@@ -143,8 +138,10 @@ function App() {
 
 Make sure you've installed all peer dependencies:
 ```bash
-npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge @radix-ui/react-popover
+npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge
 ```
+
+**Note**: `@radix-ui/react-popover` is bundled with the library and does not need to be installed separately.
 
 ### Tailwind CSS not working
 
