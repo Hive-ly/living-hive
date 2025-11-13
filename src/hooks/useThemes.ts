@@ -1,5 +1,5 @@
 import {useState, useCallback} from "react";
-import type {BaseStory, Theme} from "../types";
+import type {BaseStory, Theme, GenerateThemesOptions} from "../types";
 import {generateThemes, assignStoriesToThemes} from "../utils/themes";
 
 interface UseThemesReturn<T extends BaseStory> {
@@ -7,7 +7,7 @@ interface UseThemesReturn<T extends BaseStory> {
     stories: T[],
     embeddings: Map<string, number[]>,
     apiKey: string,
-    apiEndpoint?: string
+    options?: GenerateThemesOptions
   ) => Promise<Theme[]>;
   assignStories: (
     stories: T[],
@@ -27,13 +27,13 @@ export function useThemes<T extends BaseStory>(): UseThemesReturn<T> {
       stories: T[],
       embeddings: Map<string, number[]>,
       apiKey: string,
-      apiEndpoint?: string
+      options?: GenerateThemesOptions
     ): Promise<Theme[]> => {
       const startTime = Date.now();
       console.log("[useThemes] 🎨 Starting theme generation", {
         storyCount: stories.length,
         embeddingCount: embeddings.size,
-        apiEndpoint: apiEndpoint || "client",
+        apiEndpoint: options?.apiEndpoint || "client",
         timestamp: new Date().toISOString(),
       });
 
@@ -41,7 +41,7 @@ export function useThemes<T extends BaseStory>(): UseThemesReturn<T> {
       setError(null);
 
       try {
-        const themes = await generateThemes(stories, apiKey, apiEndpoint);
+        const themes = await generateThemes(stories, apiKey, options);
         console.log("[useThemes] ✅ Theme generation complete", {
           themeCount: themes.length,
           themes: themes.map((t) => t.label),

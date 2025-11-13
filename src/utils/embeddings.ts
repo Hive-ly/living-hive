@@ -1,10 +1,12 @@
-import type {BaseStory} from "../types";
+import type {BaseStory, GenerateEmbeddingsOptions} from "../types";
 
 // Generate embeddings for multiple texts in a single API call (batch)
 export async function generateEmbeddingsBatchClient(
   texts: string[],
   apiKey: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  model?: string,
+  dimensions?: number
 ): Promise<number[][]> {
   let lastError: Error | null = null;
 
@@ -28,8 +30,8 @@ export async function generateEmbeddingsBatchClient(
         },
         body: JSON.stringify({
           input: texts, // Array of texts for batch processing
-          model: "text-embedding-3-small",
-          dimensions: 384,
+          model: model || "text-embedding-3-small",
+          dimensions: dimensions || 384,
         }),
       });
 
@@ -79,9 +81,11 @@ export async function generateEmbeddingsBatchClient(
 // Generate embedding using OpenAI API (client-side) - single text (kept for compatibility)
 export async function generateEmbeddingClient(
   text: string,
-  apiKey: string
+  apiKey: string,
+  model?: string,
+  dimensions?: number
 ): Promise<number[]> {
-  const embeddings = await generateEmbeddingsBatchClient([text], apiKey);
+  const embeddings = await generateEmbeddingsBatchClient([text], apiKey, 3, model, dimensions);
   return embeddings[0];
 }
 
@@ -111,10 +115,15 @@ export async function generateEmbeddingServer(
 export async function generateEmbeddings<T extends BaseStory>(
   stories: T[],
   apiKey: string,
-  apiEndpoint?: string,
-  onError?: (error: Error) => void,
-  batchSize: number = 100 // OpenAI supports up to 2048 inputs per request, but we'll use 100 for safety
+  options?: GenerateEmbeddingsOptions
 ): Promise<Map<string, number[]>> {
+  const {
+    apiEndpoint,
+    onError,
+    batchSize = 100,
+    model = "text-embedding-3-small",
+    dimensions = 384,
+  } = options || {};
   const embeddings = new Map<string, number[]>();
   const totalBatches = Math.ceil(stories.length / batchSize);
 
@@ -180,7 +189,10 @@ export async function generateEmbeddings<T extends BaseStory>(
         const texts = batch.map((s) => s.text);
         const batchEmbeddings = await generateEmbeddingsBatchClient(
           texts,
-          apiKey
+          apiKey,
+          3,
+          model,
+          dimensions
         );
 
         // Map embeddings back to story IDs
@@ -219,7 +231,7 @@ export async function generateEmbeddings<T extends BaseStory>(
         );
         for (const story of batch) {
           try {
-            const embedding = await generateEmbeddingClient(story.text, apiKey);
+            const embedding = await generateEmbeddingClient(story.text, apiKey, model, dimensions);
             embeddings.set(story.id, embedding);
           } catch (individualError) {
             const individualErr =

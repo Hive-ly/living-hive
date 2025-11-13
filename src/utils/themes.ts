@@ -1,14 +1,21 @@
-import type {BaseStory, Theme} from "../types";
+import type {BaseStory, Theme, GenerateThemesOptions} from "../types";
 
 // Generate themes from stories using OpenAI
 export async function generateThemes<T extends BaseStory>(
   stories: T[],
   apiKey: string,
-  apiEndpoint?: string
+  options?: GenerateThemesOptions
 ): Promise<Theme[]> {
   if (stories.length === 0) {
     return [];
   }
+
+  const {
+    apiEndpoint,
+    model = "gpt-4-turbo-preview",
+    minThemes = 5,
+    maxThemes = 10,
+  } = options || {};
 
   // Combine all story texts
   const combinedText = stories.map((s) => s.text).join("\n\n");
@@ -17,7 +24,7 @@ export async function generateThemes<T extends BaseStory>(
   const prompt = `Analyze the following stories and extract the main themes or topics. 
 Return a JSON array of theme objects, each with an "id" (short unique identifier) and "label" (human-readable name).
 Focus on identifying distinct themes that group similar stories together.
-Limit to 5-10 themes maximum.
+Limit to ${minThemes}-${maxThemes} themes.
 
 Stories:
 ${combinedText}
@@ -70,7 +77,7 @@ Return only valid JSON array, no other text.`;
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "gpt-4-turbo-preview",
+              model: model,
               messages: [
                 {
                   role: "system",

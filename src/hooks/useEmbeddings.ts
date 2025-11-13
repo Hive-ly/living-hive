@@ -1,12 +1,12 @@
 import {useState, useCallback, useRef} from "react";
-import type {BaseStory} from "../types";
+import type {BaseStory, GenerateEmbeddingsOptions} from "../types";
 import {generateEmbeddings} from "../utils/embeddings";
 
 interface UseEmbeddingsReturn<T extends BaseStory> {
   generateEmbeddingsForStories: (
     stories: T[],
     apiKey: string,
-    apiEndpoint?: string
+    options?: GenerateEmbeddingsOptions
   ) => Promise<Map<string, number[]>>;
   loading: boolean;
   error: string | null;
@@ -26,12 +26,13 @@ export function useEmbeddings<T extends BaseStory>(
   );
 
   const getCacheKey = useCallback(
-    (stories: T[], apiKey: string, apiEndpoint?: string) => {
+    (stories: T[], apiKey: string, options?: GenerateEmbeddingsOptions) => {
       const storyIds = stories
         .map((s) => s.id)
         .sort()
         .join(",");
-      return `${storyIds}:${apiKey}:${apiEndpoint || "client"}`;
+      const optionsKey = options?.apiEndpoint || options?.model || "client";
+      return `${storyIds}:${apiKey}:${optionsKey}`;
     },
     []
   );
@@ -40,9 +41,9 @@ export function useEmbeddings<T extends BaseStory>(
     async (
       stories: T[],
       apiKey: string,
-      apiEndpoint?: string
+      options?: GenerateEmbeddingsOptions
     ): Promise<Map<string, number[]>> => {
-      const cacheKey = getCacheKey(stories, apiKey, apiEndpoint);
+      const cacheKey = getCacheKey(stories, apiKey, options);
       const storyIds =
         stories
           .map((s) => s.id)
@@ -86,7 +87,7 @@ export function useEmbeddings<T extends BaseStory>(
       console.log("[useEmbeddings] 🚀 Creating new embedding request", {
         storyCount: stories.length,
         storyIds: storyIds,
-        apiEndpoint: apiEndpoint || "client",
+        apiEndpoint: options?.apiEndpoint || "client",
       });
       setLoading(true);
       setError(null);
@@ -94,11 +95,9 @@ export function useEmbeddings<T extends BaseStory>(
       const promise = (async () => {
         const startTime = Date.now();
         try {
-          const embeddings = await generateEmbeddings(
-            stories,
-            apiKey,
-            apiEndpoint,
-            (err) => {
+          const embeddings = await generateEmbeddings(stories, apiKey, {
+            ...options,
+            onError: (err) => {
               console.error(
                 "[useEmbeddings] ❌ Error generating embedding for story",
                 {
@@ -109,8 +108,11 @@ export function useEmbeddings<T extends BaseStory>(
                 onError(err);
               }
               setError(err.message);
-            }
-          );
+              if (options?.onError) {
+                options.onError(err);
+              }
+            },
+          });
 
           // Cache the result
           cacheRef.current.set(cacheKey, embeddings);

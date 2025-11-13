@@ -56,14 +56,32 @@ export interface DialogConfig {
 // Embedding mode
 export type EmbeddingMode = "client" | "server";
 
+// Configuration options for generating embeddings
+export interface GenerateEmbeddingsOptions {
+  model?: string;
+  dimensions?: number;
+  batchSize?: number;
+  apiEndpoint?: string;
+  onError?: (error: Error) => void;
+}
+
+// Configuration options for generating themes
+export interface GenerateThemesOptions {
+  model?: string;
+  minThemes?: number;
+  maxThemes?: number;
+  apiEndpoint?: string;
+}
+
 // Component props interface
 export interface LivingHiveProps<T extends BaseStory = BaseStory> {
   stories: Story<T>[];
-  openaiApiKey: string;
-  themes?: Theme[];
+  embeddings: Map<string, number[]>;
+  themes: Theme[];
+  openaiApiKey?: string;
   colorPalette?: ColorPalette;
   apiEndpoint?: string;
-  embeddings?: Map<string, number[]>;
+  loading?: boolean;
   onHexClick?: (story: Story<T>, theme: Theme | null) => void;
   renderStory?: (story: Story<T>) => React.ReactNode;
   onError?: (error: Error) => void;

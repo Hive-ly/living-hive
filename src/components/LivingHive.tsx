@@ -5,14 +5,13 @@ import type {
   StoryWithEmbedding,
   LivingHiveProps,
 } from "../types";
-import {useEmbeddings} from "../hooks/useEmbeddings";
-import {useThemes} from "../hooks/useThemes";
 import {useUMAPPlacement} from "../hooks/useUMAPPlacement";
 import {hexToPixel, getHexRadius} from "../utils/hex";
 import {getThemeColor, DEFAULT_COLOR_PALETTE} from "../utils/colors";
 import {HiveShimmer} from "./HiveShimmer";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "./ui/dialog";
 import {cn} from "../utils/cn";
+import {assignStoriesToThemes} from "../utils/themes";
 
 interface HexData<T extends BaseStory> {
   q: number;
@@ -23,11 +22,10 @@ interface HexData<T extends BaseStory> {
 
 export function LivingHive<T extends BaseStory = BaseStory>({
   stories,
-  openaiApiKey,
-  themes: providedThemes,
+  embeddings,
+  themes,
   colorPalette = DEFAULT_COLOR_PALETTE,
-  apiEndpoint,
-  embeddings: providedEmbeddings,
+  loading: externalLoading,
   onHexClick,
   renderStory,
   onError,
@@ -39,13 +37,10 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 }: LivingHiveProps<T>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const generatingThemesRef = useRef(false);
-  const processedProvidedThemesRef = useRef<string>(""); // Track which provided themes we've processed
   const [hexes, setHexes] = useState<HexData<T>[]>([]);
   const [selectedHex, setSelectedHex] = useState<HexData<T> | null>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [focusedHexIndex, setFocusedHexIndex] = useState<number | null>(null);
-  const [themes, setThemes] = useState<Theme[]>(providedThemes || []);
   const [storyAssignments, setStoryAssignments] = useState<Map<string, string>>(
     new Map()
   );
@@ -60,238 +55,34 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   const initialPanRef = useRef({x: 0, y: 0});
   const autoFitAppliedRef = useRef<string>(""); // Track which hex set we've auto-fitted
 
-  const {generateEmbeddingsForStories, loading: embeddingsLoading} =
-    useEmbeddings<T>(onError);
-  const {
-    generateThemesFromStories,
-    assignStories,
-    loading: themesLoading,
-  } = useThemes<T>();
   const {
     computePlacement,
     loading: placementLoading,
     error: placementError,
   } = useUMAPPlacement();
 
-  // Only show loading if embeddings are being generated (not when provided)
-  const loading =
-    (providedEmbeddings ? false : embeddingsLoading) ||
-    themesLoading ||
-    placementLoading;
+  // Use external loading prop if provided, otherwise use placement loading
+  const loading = externalLoading !== undefined ? externalLoading : placementLoading;
 
-  // Generate or use provided themes
+  // Compute story assignments when themes and embeddings are available
   useEffect(() => {
-    if (providedThemes && providedThemes.length > 0) {
-      // Create a unique key for these themes to avoid reprocessing
-      const themesKey = providedThemes
-        .map((t) => `${t.id}:${t.label}`)
-        .join(",");
-
-      // Skip if we've already processed these exact themes
-      if (processedProvidedThemesRef.current === themesKey) {
-        return;
-      }
-
-      processedProvidedThemesRef.current = themesKey;
-      setThemes(providedThemes);
-
-      // Still need to assign stories to themes when themes are provided
-      if (stories.length > 0 && providedEmbeddings) {
-        // Only generate assignments if we have embeddings (synchronous for provided embeddings)
-        const assignments = assignStories(
-          stories,
-          providedEmbeddings,
-          providedThemes
-        );
-        setStoryAssignments(assignments);
-
-        // Only call callbacks once when both are ready
-        if (onThemesChange) {
-          onThemesChange(providedThemes);
-        }
-        if (onAssignmentsChange) {
-          onAssignmentsChange(assignments);
-        }
-      } else if (stories.length > 0 && !providedEmbeddings) {
-        // Only generate embeddings if not provided (async)
-        const generateAssignments = async () => {
-          try {
-            const embeddings = await generateEmbeddingsForStories(
-              stories,
-              openaiApiKey,
-              apiEndpoint
-            );
-            const assignments = assignStories(
-              stories,
-              embeddings,
-              providedThemes
-            );
-            setStoryAssignments(assignments);
-
-            // Only call callbacks once when both are ready
-            if (onThemesChange) {
-              onThemesChange(providedThemes);
-            }
-            if (onAssignmentsChange) {
-              onAssignmentsChange(assignments);
-            }
-          } catch (error) {
-            if (onError) {
-              onError(
-                error instanceof Error ? error : new Error(String(error))
-              );
-            }
-          }
-        };
-        generateAssignments();
-      }
+    if (stories.length === 0 || themes.length === 0 || embeddings.size === 0) {
+      setStoryAssignments(new Map());
       return;
     }
 
-    // Reset the processed ref when not using provided themes
-    processedProvidedThemesRef.current = "";
+    // Compute assignments synchronously
+    const assignments = assignStoriesToThemes(stories, embeddings, themes);
+    setStoryAssignments(assignments);
 
-    if (stories.length === 0) {
-      setThemes([]);
-      return;
+    // Call callbacks when assignments are ready
+    if (onThemesChange) {
+      onThemesChange(themes);
     }
-
-    // Prevent duplicate theme generation calls
-    if (generatingThemesRef.current) {
-      console.log(
-        "[LivingHive] ⚠️ Duplicate theme generation call prevented (already in progress)"
-      );
-      return;
+    if (onAssignmentsChange) {
+      onAssignmentsChange(assignments);
     }
-
-    const generateThemes = async () => {
-      const startTime = Date.now();
-      generatingThemesRef.current = true;
-      console.log("[LivingHive] 🚀 Starting theme generation", {
-        storyCount: stories.length,
-        hasProvidedEmbeddings: !!providedEmbeddings,
-        hasApiKey: !!openaiApiKey,
-        apiEndpoint: apiEndpoint || "client",
-        timestamp: new Date().toISOString(),
-      });
-
-      try {
-        let embeddings: Map<string, number[]>;
-        if (providedEmbeddings) {
-          console.log("[LivingHive] ✅ Using provided embeddings", {
-            count: providedEmbeddings.size,
-          });
-          embeddings = providedEmbeddings;
-        } else {
-          console.log("[LivingHive] 📡 Generating embeddings...");
-          const embeddingStartTime = Date.now();
-          embeddings = await generateEmbeddingsForStories(
-            stories,
-            openaiApiKey,
-            apiEndpoint
-          );
-          console.log("[LivingHive] ✅ Embeddings generated", {
-            count: embeddings.size,
-            duration: `${Date.now() - embeddingStartTime}ms`,
-          });
-        }
-
-        // Filter stories to only those with valid embeddings
-        const storiesWithEmbeddings = stories.filter((s) => {
-          const embedding = embeddings.get(s.id);
-          return embedding && embedding.length > 0;
-        });
-
-        if (storiesWithEmbeddings.length === 0) {
-          throw new Error("No stories have valid embeddings");
-        }
-
-        console.log("[LivingHive] 🎨 Generating themes...", {
-          totalStories: stories.length,
-          storiesWithEmbeddings: storiesWithEmbeddings.length,
-          storiesWithoutEmbeddings:
-            stories.length - storiesWithEmbeddings.length,
-        });
-
-        const themeStartTime = Date.now();
-        const generatedThemes = await generateThemesFromStories(
-          storiesWithEmbeddings, // Only use stories with embeddings for theme generation
-          embeddings,
-          openaiApiKey,
-          apiEndpoint
-        );
-        console.log("[LivingHive] ✅ Themes generated", {
-          themeCount: generatedThemes.length,
-          themes: generatedThemes.map((t) => t.label),
-          duration: `${Date.now() - themeStartTime}ms`,
-        });
-
-        // Only assign stories that have valid embeddings
-        const assignments = assignStories(
-          storiesWithEmbeddings,
-          embeddings,
-          generatedThemes
-        );
-
-        console.log("[LivingHive] ✅ Theme generation complete", {
-          totalDuration: `${Date.now() - startTime}ms`,
-          assignmentCount: assignments.size,
-          storiesAssigned: assignments.size,
-          storiesSkipped: stories.length - assignments.size,
-        });
-
-        // Set themes and assignments
-        setThemes(generatedThemes);
-        setStoryAssignments(assignments);
-
-        // Only call callbacks once when both themes and assignments are ready
-        if (onThemesChange) {
-          onThemesChange(generatedThemes);
-        }
-        if (onAssignmentsChange) {
-          onAssignmentsChange(assignments);
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.error("[LivingHive] ❌ Theme generation failed", {
-          error: errorMessage,
-          duration: `${Date.now() - startTime}ms`,
-          hasExistingThemes: themes.length > 0,
-        });
-
-        // If we have existing themes, keep them instead of clearing
-        // This prevents losing good themes if a subsequent generation fails
-        if (themes.length === 0) {
-          // Only clear if we don't have any themes yet
-          setThemes([]);
-          setStoryAssignments(new Map());
-        } else {
-          console.log("[LivingHive] ⚠️ Keeping existing themes despite error", {
-            existingThemeCount: themes.length,
-          });
-        }
-
-        if (onError) {
-          onError(error instanceof Error ? error : new Error(errorMessage));
-        }
-      } finally {
-        generatingThemesRef.current = false;
-      }
-    };
-
-    generateThemes();
-  }, [
-    stories,
-    providedThemes,
-    providedEmbeddings,
-    openaiApiKey,
-    apiEndpoint,
-    generateEmbeddingsForStories,
-    generateThemesFromStories,
-    assignStories,
-    onError,
-  ]);
+  }, [stories, themes, embeddings, onThemesChange, onAssignmentsChange]);
 
   // Generate hex positions when data changes
   useEffect(() => {
@@ -308,14 +99,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 
     const generateHexes = async () => {
       try {
-        const embeddings = providedEmbeddings
-          ? providedEmbeddings
-          : await generateEmbeddingsForStories(
-              stories,
-              openaiApiKey,
-              apiEndpoint
-            );
-
         // Filter out stories without embeddings
         const validStories = stories.filter((story) => {
           const embedding = embeddings.get(story.id);
@@ -391,12 +174,9 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   }, [
     stories,
     themes,
+    embeddings,
     storyAssignments,
-    providedEmbeddings,
-    openaiApiKey,
-    apiEndpoint,
     config,
-    generateEmbeddingsForStories,
     computePlacement,
     onError,
   ]);
@@ -845,11 +625,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   );
 
   if (loading) {
-    console.log("Loading state:", {
-      embeddingsLoading,
-      themesLoading,
-      placementLoading,
-    });
     return <HiveShimmer className={className} />;
   }
 
@@ -878,7 +653,8 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     assignmentsCount: storyAssignments.size,
   });
 
-  if (!themes.length || !hexes.length) {
+  // Handle empty arrays gracefully with informative messages
+  if (themes.length === 0 || embeddings.size === 0) {
     return (
       <div
         className={cn(
@@ -888,12 +664,36 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       >
         <div className="text-center">
           <p className="text-muted-foreground mb-2">
-            {!themes.length ? "No themes available" : "No hexes to display"}
+            {themes.length === 0 && embeddings.size === 0
+              ? "No themes or embeddings provided"
+              : themes.length === 0
+              ? "No themes provided"
+              : "No embeddings provided"}
           </p>
           <p className="text-sm text-muted-foreground">
-            {!themes.length
-              ? "Generating themes..."
-              : `Waiting for ${stories.length} stories to be processed...`}
+            {themes.length === 0 && embeddings.size === 0
+              ? "Please provide themes and embeddings to visualize stories."
+              : themes.length === 0
+              ? "Please provide themes to group stories."
+              : "Please provide embeddings to visualize stories."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hexes.length) {
+    return (
+      <div
+        className={cn(
+          "h-[calc(100vh-312px)] flex items-center justify-center",
+          className
+        )}
+      >
+        <div className="text-center">
+          <p className="text-muted-foreground mb-2">Computing positions...</p>
+          <p className="text-sm text-muted-foreground">
+            Processing {stories.length} {stories.length === 1 ? "story" : "stories"}...
           </p>
         </div>
       </div>
