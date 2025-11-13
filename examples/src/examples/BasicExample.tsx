@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { toast } from 'sonner'
-import { LivingHive } from '@hively/living-hive'
+import { LivingHive, DEFAULT_COLOR_PALETTE } from '@hively/living-hive'
 import umapWorkerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
 import type { BaseStory, Theme } from '@hively/living-hive'
 import mockEmbeddingsData from '../data/mockEmbeddings.json'
@@ -152,15 +152,6 @@ export function BasicExample() {
 
   const [storyAssignments, setStoryAssignments] = React.useState<Map<string, string>>(new Map())
 
-  // Color palette from image
-  const colorPalette = [
-    '#4F81B0', // Muted Blue
-    '#AEBEC5', // Pale Blue-Grey
-    '#DAA5AD', // Dusty Rose Pink
-    '#FF6E7F', // Coral Pink
-    '#CDB15E', // Muted Gold/Mustard
-  ]
-
   // Dark charcoal backgrounds
   const charcoalMedium = '#2d2d2d'
 
@@ -180,7 +171,7 @@ export function BasicExample() {
           <div className="max-w-3xl">
             <h1
               className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight"
-              style={{ color: colorPalette[0] }}
+              style={{ color: DEFAULT_COLOR_PALETTE[0] }}
             >
               Living Hive
             </h1>
@@ -194,7 +185,7 @@ export function BasicExample() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium transition-colors"
-                style={{ color: colorPalette[0], opacity: 0.9 }}
+                style={{ color: DEFAULT_COLOR_PALETTE[0], opacity: 0.9 }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '0.9')}
               >
@@ -243,7 +234,6 @@ export function BasicExample() {
                 stories={sampleStories}
                 embeddings={embeddings}
                 themes={themes}
-                colorPalette={colorPalette}
                 workerUrl={umapWorkerUrl}
                 onAssignmentsChange={setStoryAssignments}
                 onError={error => {
@@ -263,7 +253,7 @@ export function BasicExample() {
                 themes={themes}
                 storyAssignments={storyAssignments}
                 stories={sampleStories}
-                colorPalette={colorPalette}
+                colorPalette={DEFAULT_COLOR_PALETTE}
               />
             )}
           </div>

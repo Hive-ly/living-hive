@@ -7,3 +7,4 @@ export {
   type UseUMAPPlacementReturn,
 } from './hooks/useUMAPPlacement'
 export { StoryDataGenerator, assignStoriesToThemes } from './data/StoryDataGenerator'
+export { DEFAULT_COLOR_PALETTE } from './utils/colors'

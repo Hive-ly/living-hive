@@ -2,11 +2,16 @@ import type { Theme, ColorPalette } from '../types'
 
 // Default warm color palette
 export const DEFAULT_COLOR_PALETTE: ColorPalette = [
-  '#4F81B0', // Blue
-  '#AEBEC5', // Light Gray
   '#DAA5AD', // Pink
   '#FF6E7F', // Coral
+  '#B9776F', // Warm Clay
+  '#E8B88A', // Soft Apricot
   '#CDB15E', // Gold
+  '#7F9C63', // Sage Green
+  '#6B9A8A', // Muted Teal
+  '#4F81B0', // Blue
+  '#8C6BA9', // Dusty Lavender
+  '#AEBEC5', // Light Gray
 ]
 
 // Assign colors to themes from palette (round-robin)
