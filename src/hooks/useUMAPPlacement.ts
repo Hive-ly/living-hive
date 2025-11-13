@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+// eslint-disable-next-line import/no-unresolved, import/default
+import UMAPPlacementWorker from '../workers/umap-placement.worker?worker'
 import type {
   HexCoordinate,
   UMAPNormalization,
@@ -32,20 +34,21 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
   useEffect(() => {
     try {
       // Use Vite's worker import syntax for proper bundling
-      const workerUrl = new URL('../workers/umap-placement.worker.ts', import.meta.url)
-      workerRef.current = new Worker(workerUrl, { type: 'module' })
+      const worker = new UMAPPlacementWorker()
 
-      workerRef.current.onerror = err => {
+      worker.onerror = err => {
         console.error('useUMAPPlacement: Worker error event:', err)
         setError('Web worker failed to initialize')
         setLoading(false)
       }
 
-      workerRef.current.onmessageerror = err => {
+      worker.onmessageerror = err => {
         console.error('useUMAPPlacement: Worker message error:', err)
         setError('Web worker message error')
         setLoading(false)
       }
+
+      workerRef.current = worker
     } catch (err) {
       console.error('useUMAPPlacement: Failed to create worker:', err)
       setError(
