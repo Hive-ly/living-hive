@@ -42,26 +42,6 @@ To test the client-side embedding generation, you'll need an OpenAI API key:
 
 **Note**: Keep your API key secure! Never commit `.env.local` to version control. The `.env.local.example` file shows the required format.
 
-### Using Mock Mode (No API Calls)
-
-To test without making API calls:
-
-1. Generate pre-computed data:
-
-   ```bash
-   npm run fetch-stories          # Fetch stories from Reddit
-   npm run regenerate-embeddings  # Generate embeddings
-   npm run regenerate-themes      # Generate themes
-   ```
-
-2. Set environment variable:
-
-   ```bash
-   VITE_USE_MOCK_EMBEDDINGS=true
-   ```
-
-3. Run the app - it will use pre-generated data with no API calls!
-
 ## Testing the Library Build
 
 To test that the library builds correctly:

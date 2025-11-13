@@ -571,7 +571,6 @@ These scripts require an OpenAI API key in `.env.local`:
 
 ```bash
 VITE_OPENAI_API_KEY=sk-your-key-here
-VITE_USE_MOCK_EMBEDDINGS=false  # Set to "true" to use pre-generated data
 ```
 
 ## Examples
@@ -597,24 +596,6 @@ npm run dev
 The examples app will start at `http://localhost:5173`.
 
 ### Using Mock Mode (No API Calls)
-
-To use pre-generated embeddings and themes:
-
-1. Generate the data once:
-
-   ```bash
-   npm run fetch-stories      # Fetch and sanitize stories
-   npm run regenerate-embeddings  # Generate embeddings
-   npm run regenerate-themes      # Generate themes
-   ```
-
-2. Set environment variable:
-
-   ```bash
-   VITE_USE_MOCK_EMBEDDINGS=true
-   ```
-
-3. Run the app - no API calls will be made!
 
 ## Deployment to Netlify
 

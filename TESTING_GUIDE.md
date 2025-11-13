@@ -1,6 +1,6 @@
 # Testing Guide: Dynamic vs Hard-coded Embeddings
 
-This guide walks you through testing both dynamic (real API) and hard-coded (mock) embedding modes.
+This guide walks you through testing both dynamic (real API) and hard-coded embedding modes.
 
 ## Prerequisites
 
@@ -32,9 +32,9 @@ This will:
 
 **Note:** This requires your OpenAI API key and may take a few minutes.
 
-## Step 2: Generate Mock Embeddings
+## Step 2: Generate Pre-computed Embeddings
 
-Generate embeddings for your stories and save them as mock data:
+Generate embeddings for your stories and save them as reusable data:
 
 ```bash
 npm run regenerate-embeddings
@@ -50,41 +50,29 @@ This will:
 
 ## Step 3: Test Dynamic Embeddings (Real API Calls)
 
-1. **Make sure `VITE_USE_MOCK_EMBEDDINGS` is NOT set** (or set to `false`):
+1. **Make sure you have `VITE_OPENAI_API_KEY` set** in `.env.local`
 
-   ```bash
-   # In .env.local, either omit it or set:
-   VITE_USE_MOCK_EMBEDDINGS=false
-   ```
-
-2. **Make sure you have `VITE_OPENAI_API_KEY` set** in `.env.local`
-
-3. **Start the dev server**:
+2. **Start the dev server**:
 
    ```bash
    npm run dev
    ```
 
-4. **Open the Basic Example** in your browser
+3. **Open the Basic Example** in your browser
 
-5. **What to expect**:
+4. **What to expect**:
    - The component will make real API calls to OpenAI
    - You'll see loading states while embeddings are generated
    - Embeddings are cached (ref-based) so subsequent renders won't regenerate them
    - Check the browser console/network tab to see API calls
 
-## Step 4: Test Hard-coded Embeddings (Mock Mode)
+## Step 4: Test with Pre-computed Embeddings (No API Calls)
 
-1. **Set `VITE_USE_MOCK_EMBEDDINGS=true`** in `.env.local`:
+1. **Generate embeddings and themes** once using the scripts from Steps 1 and 2
 
-   ```bash
-   VITE_USE_MOCK_EMBEDDINGS=true
-   ```
-
-2. **Restart the dev server** (if running):
+2. **Start (or restart) the dev server**:
 
    ```bash
-   # Stop the server (Ctrl+C) and restart:
    npm run dev
    ```
 
@@ -93,31 +81,29 @@ This will:
 4. **What to expect**:
    - No API calls to OpenAI (check network tab)
    - Instant loading (embeddings loaded from JSON)
-   - You'll see "Using mock embeddings (no API calls)" message
    - Much faster initial load
 
 ## Quick Comparison
 
-| Feature          | Dynamic Embeddings                        | Hard-coded Embeddings           |
-| ---------------- | ----------------------------------------- | ------------------------------- |
-| API Calls        | Yes (OpenAI)                              | No                              |
-| Initial Load     | ~10 seconds (22 stories)                  | Instant                         |
-| Requires API Key | Yes                                       | No (for viewing)                |
-| Use Case         | Development, testing                      | Production demos                |
-| Environment Var  | `VITE_USE_MOCK_EMBEDDINGS=false` or unset | `VITE_USE_MOCK_EMBEDDINGS=true` |
+| Feature          | Dynamic Embeddings               | Pre-computed Embeddings |
+| ---------------- | -------------------------------- | ----------------------- |
+| API Calls        | Yes (OpenAI)                     | No                      |
+| Initial Load     | ~10 seconds (22 stories)         | Instant                 |
+| Requires API Key | Yes                              | No (for viewing)        |
+| Use Case         | Development, realtime validation | Production demos        |
 
 ## Troubleshooting
 
-### Mock embeddings not loading
+### Pre-computed embeddings not loading
 
 - Make sure `mockEmbeddings.json` exists and has data
 - Run `npm run regenerate-embeddings` to generate embeddings
 - Check that story IDs in `sampleStories.json` match the IDs used in `BasicExample.tsx`
 
-### API calls still happening in mock mode
+### API calls still happening unexpectedly
 
-- Make sure `.env.local` has `VITE_USE_MOCK_EMBEDDINGS=true`
-- Restart the dev server after changing env vars
+- Confirm `examples/src/data/mockEmbeddings.json` exists and matches your stories
+- Restart the dev server after regenerating data
 - Check browser console for any errors
 
 ### Stories not found
