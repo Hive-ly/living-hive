@@ -90,6 +90,8 @@ export interface LivingHiveProps<T extends BaseStory = BaseStory> {
   className?: string
   config?: Partial<PlacementConfig>
   dialogConfig?: DialogConfig
+  canvasWidth?: number | string
+  canvasHeight?: number | string
 }
 
 // UMAP normalization parameters

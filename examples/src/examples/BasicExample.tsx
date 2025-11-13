@@ -168,7 +168,7 @@ export function BasicExample() {
 
   return (
     <div
-      className="min-h-screen"
+      className="living-hive-theme min-h-screen"
       style={{
         color: warmOffWhite,
       }}

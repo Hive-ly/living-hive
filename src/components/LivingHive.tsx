@@ -1,8 +1,10 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type WheelEvent as ReactWheelEvent,
@@ -15,6 +17,7 @@ import { HiveShimmer } from './HiveShimmer'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { cn } from '../utils/cn'
 import { assignStoriesToThemes } from '../data/StoryDataGenerator'
+import '../styles/living-hive.css'
 
 interface HexData<T extends BaseStory> {
   q: number
@@ -37,7 +40,30 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   className,
   config,
   dialogConfig,
+  canvasWidth,
+  canvasHeight,
 }: LivingHiveProps<T>) {
+  const resolvedCanvasWidth = canvasWidth ?? config?.canvasWidth
+  const resolvedCanvasHeight = canvasHeight ?? config?.canvasHeight
+  const fallbackCanvasWidth =
+    typeof resolvedCanvasWidth === 'number' ? resolvedCanvasWidth : undefined
+  const fallbackCanvasHeight =
+    typeof resolvedCanvasHeight === 'number' ? resolvedCanvasHeight : undefined
+
+  const canvasCssVariables = useMemo<CSSProperties | undefined>(() => {
+    const style: CSSProperties = {}
+    if (resolvedCanvasHeight !== undefined) {
+      ;(style as Record<string, string>)['--living-hive-height'] =
+        typeof resolvedCanvasHeight === 'number'
+          ? `${resolvedCanvasHeight}px`
+          : resolvedCanvasHeight
+    }
+    if (resolvedCanvasWidth !== undefined) {
+      ;(style as Record<string, string>)['--living-hive-width'] =
+        typeof resolvedCanvasWidth === 'number' ? `${resolvedCanvasWidth}px` : resolvedCanvasWidth
+    }
+    return Object.keys(style).length ? style : undefined
+  }, [resolvedCanvasHeight, resolvedCanvasWidth])
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [hexes, setHexes] = useState<HexData<T>[]>([])
@@ -124,8 +150,8 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 
         const canvas = canvasRef.current
         const rect = canvas?.getBoundingClientRect()
-        const canvasWidth = rect?.width || config?.canvasWidth || 900
-        const canvasHeight = rect?.height || config?.canvasHeight || 600
+        const canvasWidth = rect?.width || fallbackCanvasWidth || 900
+        const canvasHeight = rect?.height || fallbackCanvasHeight || 600
 
         const result = await computePlacement(storyData, norm, {
           canvasWidth,
@@ -168,11 +194,72 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     }
 
     generateHexes()
-  }, [stories, themes, embeddings, storyAssignments, config, computePlacement, onError])
+  }, [
+    stories,
+    themes,
+    embeddings,
+    storyAssignments,
+    config,
+    computePlacement,
+    onError,
+    fallbackCanvasWidth,
+    fallbackCanvasHeight,
+  ])
+
+  const drawHex = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      radius: number,
+      hex: HexData<T>,
+      isSelected: boolean,
+    ) => {
+      const fillColor = hex.theme
+        ? getThemeColor(hex.theme.id, themes, colorPalette)
+        : colorPalette[0]
+
+      ctx.save()
+
+      ctx.beginPath()
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i
+        const hexX = x + radius * Math.cos(angle)
+        const hexY = y + radius * Math.sin(angle)
+        if (i === 0) {
+          ctx.moveTo(hexX, hexY)
+        } else {
+          ctx.lineTo(hexX, hexY)
+        }
+      }
+      ctx.closePath()
+
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
+      gradient.addColorStop(0, fillColor)
+      gradient.addColorStop(1, fillColor + '80')
+
+      ctx.fillStyle = gradient
+      ctx.fill()
+
+      ctx.strokeStyle = isSelected ? '#000' : fillColor
+      ctx.lineWidth = isSelected ? 3 : 2
+      ctx.stroke()
+
+      if (isSelected) {
+        ctx.shadowColor = fillColor
+        ctx.shadowBlur = 15
+        ctx.stroke()
+      }
+
+      ctx.restore()
+    },
+    [colorPalette, themes],
+  )
 
   // Render hexes to canvas
   useEffect(() => {
     const canvas = canvasRef.current
+    const container = containerRef.current
     if (!canvas || !hexes.length) {
       return
     }
@@ -194,12 +281,20 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     canvas.height = rect.height * dpr
     ctx.scale(dpr, dpr)
 
-    // Fill with lighter background
-    ctx.fillStyle = '#1a1a1a' // Dark gray background
+    // Resolve theme variables for canvas styling
+    const computedStyles = container ? getComputedStyle(container) : null
+    const canvasBackgroundValue =
+      computedStyles?.getPropertyValue('--living-hive-canvas-background') ?? ''
+    const canvasBorderValue = computedStyles?.getPropertyValue('--living-hive-canvas-border') ?? ''
+    const canvasBackground = canvasBackgroundValue.trim() || '#1a1a1a'
+    const canvasBorder = canvasBorderValue.trim() || '#404040'
+
+    // Fill with background color
+    ctx.fillStyle = canvasBackground
     ctx.fillRect(0, 0, rect.width, rect.height)
 
     // Draw outline/border
-    ctx.strokeStyle = '#404040' // Medium gray outline
+    ctx.strokeStyle = canvasBorder
     ctx.lineWidth = 2
     ctx.strokeRect(1, 1, rect.width - 2, rect.height - 2)
 
@@ -245,7 +340,20 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     }
 
     ctx.restore()
-  }, [hexes, selectedHex, focusedHexIndex, config, zoom, panX, panY, drawHex])
+  }, [
+    hexes,
+    selectedHex,
+    focusedHexIndex,
+    config,
+    zoom,
+    panX,
+    panY,
+    drawHex,
+    canvasCssVariables,
+    className,
+    fallbackCanvasWidth,
+    fallbackCanvasHeight,
+  ])
 
   // Auto-fit: Calculate bounds and center the hexes after they're rendered
   useEffect(() => {
@@ -361,56 +469,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
   }, [])
-
-  const drawHex = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      x: number,
-      y: number,
-      radius: number,
-      hex: HexData<T>,
-      isSelected: boolean,
-    ) => {
-      const fillColor = hex.theme
-        ? getThemeColor(hex.theme.id, themes, colorPalette)
-        : colorPalette[0]
-
-      ctx.save()
-
-      ctx.beginPath()
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i
-        const hexX = x + radius * Math.cos(angle)
-        const hexY = y + radius * Math.sin(angle)
-        if (i === 0) {
-          ctx.moveTo(hexX, hexY)
-        } else {
-          ctx.lineTo(hexX, hexY)
-        }
-      }
-      ctx.closePath()
-
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
-      gradient.addColorStop(0, fillColor)
-      gradient.addColorStop(1, fillColor + '80')
-
-      ctx.fillStyle = gradient
-      ctx.fill()
-
-      ctx.strokeStyle = isSelected ? '#000' : fillColor
-      ctx.lineWidth = isSelected ? 3 : 2
-      ctx.stroke()
-
-      if (isSelected) {
-        ctx.shadowColor = fillColor
-        ctx.shadowBlur = 15
-        ctx.stroke()
-      }
-
-      ctx.restore()
-    },
-    [colorPalette, themes],
-  )
 
   // Handle mouse wheel zoom
   const handleWheel = useCallback(
@@ -674,6 +732,7 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     <div
       ref={containerRef}
       className={cn('relative', className)}
+      style={canvasCssVariables}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="application"
@@ -683,13 +742,9 @@ export function LivingHive<T extends BaseStory = BaseStory>({
         <canvas
           ref={canvasRef}
           className={cn(
-            'w-full border rounded-xl cursor-move focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-gray-900',
-            isFullscreen ? 'h-screen' : 'h-[calc(100vh-312px)]',
+            'living-hive__canvas cursor-move',
+            isFullscreen && 'living-hive__canvas--fullscreen',
           )}
-          style={{
-            touchAction: 'none',
-            borderColor: 'rgba(245, 245, 240, 0.2)',
-          }}
           onClick={handleCanvasClick}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -702,18 +757,7 @@ export function LivingHive<T extends BaseStory = BaseStory>({
         {/* Full-screen button */}
         <button
           onClick={handleFullscreen}
-          className="absolute top-2 right-2 z-10 p-2 rounded-lg backdrop-blur-sm transition-colors"
-          style={{
-            backgroundColor: 'rgba(58, 58, 58, 0.8)',
-            color: '#F5F5F0',
-            border: '1px solid rgba(245, 245, 240, 0.2)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.backgroundColor = 'rgba(58, 58, 58, 0.95)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.backgroundColor = 'rgba(58, 58, 58, 0.8)'
-          }}
+          className="living-hive__fullscreen-toggle absolute top-2 right-2 z-10 p-2 rounded-lg backdrop-blur-sm transition-colors focus-visible:outline-none"
           aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
         >
@@ -745,6 +789,7 @@ export function LivingHive<T extends BaseStory = BaseStory>({
           <DialogContent
             showOverlay={dialogConfig?.showOverlay === true}
             className={cn(
+              'living-hive__dialog',
               // Override default centered positioning
               '!left-auto !right-0 !translate-x-0 !bottom-auto',
               // Base positioning - fixed on right side of viewport, full height
@@ -779,12 +824,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
               'overflow-y-auto p-6 flex flex-col items-start',
               dialogConfig?.className,
             )}
-            style={{
-              backgroundColor: '#3a3a3a', // Slightly lighter charcoal than background (#2d2d2d)
-              color: '#F5F5F0', // Warm off-white
-              borderColor: 'rgba(245, 245, 240, 0.2)', // Subtle warm off-white border
-              height: '100vh', // Always full height
-            }}
             onOpenAutoFocus={e => e.preventDefault()}
             onInteractOutside={e => {
               // Prevent closing when clicking on canvas
@@ -798,23 +837,19 @@ export function LivingHive<T extends BaseStory = BaseStory>({
               {selectedHex.theme && (
                 <div className="flex items-center gap-2 mb-2">
                   <div
-                    className="w-4 h-4 rounded-full border flex-shrink-0"
+                    className="living-hive__dialog-theme-dot w-4 h-4 rounded-full border flex-shrink-0"
                     style={{
                       backgroundColor: getThemeColor(selectedHex.theme.id, themes, colorPalette),
-                      borderColor: 'rgba(245, 245, 240, 0.3)',
                     }}
                     aria-label={`Theme: ${selectedHex.theme.label}`}
                   />
-                  <DialogTitle className="text-xl font-semibold" style={{ color: '#F5F5F0' }}>
+                  <DialogTitle className="living-hive__dialog-title text-xl font-semibold">
                     {selectedHex.theme.label}
                   </DialogTitle>
                 </div>
               )}
             </DialogHeader>
-            <div
-              className="text-base leading-relaxed pt-2 flex-shrink-0"
-              style={{ color: '#F5F5F0', opacity: 0.95 }}
-            >
+            <div className="living-hive__dialog-story text-base leading-relaxed pt-2 flex-shrink-0">
               {renderStory ? (
                 renderStory(selectedHex.story)
               ) : (
@@ -826,19 +861,12 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       )}
 
       {/* Legend */}
-      <div
-        className="absolute bottom-4 right-4 backdrop-blur-sm rounded-lg px-3 py-2 text-sm z-10"
-        style={{
-          backgroundColor: 'rgba(58, 58, 58, 0.8)',
-          border: '1px solid rgba(245, 245, 240, 0.2)',
-          color: '#F5F5F0',
-        }}
-      >
+      <div className="living-hive__legend absolute bottom-4 right-4 backdrop-blur-sm rounded-lg px-3 py-2 text-sm z-10">
         <div className="flex items-center gap-4">
-          <span style={{ opacity: 0.9 }}>
+          <span className="living-hive__legend-value">
             {stories.length} {stories.length === 1 ? 'story' : 'stories'}
           </span>
-          <span style={{ opacity: 0.9 }}>
+          <span className="living-hive__legend-value">
             {themes.length} {themes.length === 1 ? 'theme' : 'themes'}
           </span>
         </div>

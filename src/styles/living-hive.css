@@ -1,0 +1,99 @@
+.living-hive-theme {
+  /* Layout */
+  --living-hive-height: calc(100vh - 312px);
+  --living-hive-canvas-border-radius: 0.75rem;
+  --living-hive-width: 100%;
+
+  /* Canvas visuals */
+  --living-hive-canvas-background: #1a1a1a;
+  --living-hive-canvas-border: #404040;
+  --living-hive-canvas-outline: rgba(245, 245, 240, 0.2);
+
+  /* Focus styles */
+  --living-hive-focus-ring: var(--color-primary, #a855f7);
+  --living-hive-focus-ring-offset: rgba(255, 255, 255, 0.12);
+
+  /* Fullscreen toggle */
+  --living-hive-toggle-bg: rgba(58, 58, 58, 0.8);
+  --living-hive-toggle-bg-hover: rgba(58, 58, 58, 0.95);
+  --living-hive-toggle-color: #f5f5f0;
+  --living-hive-toggle-border: rgba(245, 245, 240, 0.2);
+
+  /* Dialog */
+  --living-hive-dialog-background: #3a3a3a;
+  --living-hive-dialog-color: #f5f5f0;
+  --living-hive-dialog-border: rgba(245, 245, 240, 0.2);
+  --living-hive-dialog-radius: 0;
+
+  /* Legend */
+  --living-hive-legend-background: rgba(58, 58, 58, 0.8);
+  --living-hive-legend-border: rgba(245, 245, 240, 0.2);
+  --living-hive-legend-color: #f5f5f0;
+  --living-hive-legend-opacity: 0.9;
+}
+
+.living-hive__canvas {
+  width: var(--living-hive-width, 100%);
+  height: var(--living-hive-height, calc(100vh - 312px));
+  background-color: var(--living-hive-canvas-background, #1a1a1a);
+  border: 1px solid var(--living-hive-canvas-outline, rgba(245, 245, 240, 0.2));
+  border-radius: var(--living-hive-canvas-border-radius, 0.75rem);
+  touch-action: none;
+}
+
+.living-hive__canvas:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--living-hive-focus-ring-offset, rgba(255, 255, 255, 0.12)),
+    0 0 0 4px var(--living-hive-focus-ring, #a855f7);
+}
+
+.living-hive__canvas--fullscreen {
+  height: 100vh;
+}
+
+.living-hive__fullscreen-toggle {
+  background-color: var(--living-hive-toggle-bg, rgba(58, 58, 58, 0.8));
+  color: var(--living-hive-toggle-color, #f5f5f0);
+  border: 1px solid var(--living-hive-toggle-border, rgba(245, 245, 240, 0.2));
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.living-hive__fullscreen-toggle:hover,
+.living-hive__fullscreen-toggle:focus-visible {
+  background-color: var(--living-hive-toggle-bg-hover, rgba(58, 58, 58, 0.95));
+}
+
+.living-hive__dialog {
+  background-color: var(--living-hive-dialog-background, #3a3a3a);
+  color: var(--living-hive-dialog-color, #f5f5f0);
+  border-color: var(--living-hive-dialog-border, rgba(245, 245, 240, 0.2));
+  border-radius: var(--living-hive-dialog-radius, 0);
+  height: 100vh;
+}
+
+.living-hive__dialog-title {
+  color: inherit;
+}
+
+.living-hive__dialog-story {
+  color: var(--living-hive-dialog-color, #f5f5f0);
+  opacity: 0.95;
+}
+
+.living-hive__dialog-theme-dot {
+  border-color: var(--living-hive-dialog-border, rgba(245, 245, 240, 0.2));
+}
+
+.living-hive__legend {
+  background-color: var(--living-hive-legend-background, rgba(58, 58, 58, 0.8));
+  border: 1px solid var(--living-hive-legend-border, rgba(245, 245, 240, 0.2));
+  color: var(--living-hive-legend-color, #f5f5f0);
+}
+
+.living-hive__legend-value {
+  opacity: var(--living-hive-legend-opacity, 0.9);
+}

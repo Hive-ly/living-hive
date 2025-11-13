@@ -120,9 +120,11 @@ function App() {
 ```tsx
 const customPalette = ['#FF6E7F', '#4F81B0', '#CDB15E', '#DAA5AD', '#AEBEC5']
 
+// Assuming `stories`, `embeddings`, and `themes` are defined as in the basic example
 <LivingHive
   stories={stories}
-  openaiApiKey="your-api-key-here"
+  embeddings={embeddings}
+  themes={themes}
   colorPalette={customPalette}
 />
 ```
@@ -132,7 +134,8 @@ const customPalette = ['#FF6E7F', '#4F81B0', '#CDB15E', '#DAA5AD', '#AEBEC5']
 ```tsx
 <LivingHive
   stories={stories}
-  openaiApiKey="your-api-key-here"
+  embeddings={embeddings}
+  themes={themes}
   renderStory={story => (
     <div>
       <h3>{story.title}</h3>
@@ -162,9 +165,14 @@ const stories: MyStory[] = [
   },
 ]
 
+const embeddings = new Map<string, number[]>([['1', [0.1, 0.2, 0.3]]])
+
+const themes: Theme[] = [{ id: 'teamwork', label: 'Teamwork' }]
+
 <LivingHive<MyStory>
   stories={stories}
-  openaiApiKey="your-api-key-here"
+  embeddings={embeddings}
+  themes={themes}
   renderStory={(story) => (
     <div>
       <h3>{story.title}</h3>
@@ -174,6 +182,54 @@ const stories: MyStory[] = [
   )}
 />
 ```
+
+## Custom Styling
+
+`LivingHive` ships with a set of CSS custom properties so you can restyle the experience without forking the component. The library injects the styles automatically; opt into the default charcoal palette by wrapping the component in the provided `.living-hive-theme` class:
+
+```tsx
+export function App() {
+  return (
+    <div className="living-hive-theme">
+      <LivingHive stories={stories} embeddings={embeddings} themes={themes} />
+    </div>
+  )
+}
+```
+
+Override any variable by scoping new values to your own class or element:
+
+```css
+.my-product-hive {
+  --living-hive-canvas-background: #ffffff;
+  --living-hive-canvas-outline: rgba(28, 28, 28, 0.12);
+  --living-hive-toggle-bg: rgba(255, 255, 255, 0.85);
+  --living-hive-legend-background: rgba(28, 28, 28, 0.85);
+  --living-hive-dialog-color: #1c1c1c;
+}
+```
+
+```tsx
+<div className="my-product-hive">
+  <LivingHive stories={stories} embeddings={embeddings} themes={themes} canvasHeight={480} />
+</div>
+```
+
+Available variables include:
+
+| Variable                                                                                                                          | Purpose                                       |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `--living-hive-width`                                                                                                             | Canvas width (default `100%`)                 |
+| `--living-hive-height`                                                                                                            | Canvas height (default `calc(100vh - 312px)`) |
+| `--living-hive-canvas-background`                                                                                                 | Canvas background color shown behind hexes    |
+| `--living-hive-canvas-outline`                                                                                                    | Canvas border color                           |
+| `--living-hive-canvas-border-radius`                                                                                              | Canvas corner radius                          |
+| `--living-hive-focus-ring` / `--living-hive-focus-ring-offset`                                                                    | Focus ring colors for keyboard users          |
+| `--living-hive-toggle-bg` / `--living-hive-toggle-bg-hover` / `--living-hive-toggle-color` / `--living-hive-toggle-border`        | Fullscreen toggle palette                     |
+| `--living-hive-dialog-background` / `--living-hive-dialog-color` / `--living-hive-dialog-border` / `--living-hive-dialog-radius`  | Story dialog surface styling                  |
+| `--living-hive-legend-background` / `--living-hive-legend-border` / `--living-hive-legend-color` / `--living-hive-legend-opacity` | Legend chip visuals                           |
+
+You can also supply explicit dimensions via the new `canvasWidth` and `canvasHeight` props. Numbers are treated as pixel values (e.g. `canvasHeight={480}`), while strings accept any CSS length (e.g. `canvasHeight="70vh"`). When these props are omitted, the component falls back to the CSS custom properties so host applications can manage sizing through styles alone.
 
 ## Generating Embeddings and Themes
 
@@ -317,22 +373,25 @@ The canvas has a visible background and border to show the visualization boundar
 
 #### Props
 
-| Prop                  | Type                       | Required | Default          | Description                                                                                        |
-| --------------------- | -------------------------- | -------- | ---------------- | -------------------------------------------------------------------------------------------------- |
-| `stories`             | `Story<T>[]`               | Yes      | -                | Array of stories to visualize                                                                      |
-| `embeddings`          | `Map<string, number[]>`    | Yes      | -                | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
-| `themes`              | `Theme[]`                  | Yes      | -                | Pre-generated themes. Can be empty array if not yet loaded.                                        |
-| `loading`             | `boolean`                  | No       | -                | Loading state to show shimmer while data is being fetched                                          |
-| `openaiApiKey`        | `string`                   | No       | -                | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
-| `colorPalette`        | `string[]`                 | No       | Warm palette     | Array of hex color strings                                                                         |
-| `onHexClick`          | `(story, theme) => void`   | No       | -                | Callback when a hex is clicked                                                                     |
-| `renderStory`         | `(story) => ReactNode`     | No       | Default renderer | Custom story renderer for dialog                                                                   |
-| `onError`             | `(error) => void`          | No       | -                | Error handler callback                                                                             |
-| `onThemesChange`      | `(themes) => void`         | No       | -                | Callback when themes are updated                                                                   |
-| `onAssignmentsChange` | `(assignments) => void`    | No       | -                | Callback when story-to-theme assignments change                                                    |
-| `className`           | `string`                   | No       | -                | Additional CSS classes                                                                             |
-| `config`              | `Partial<PlacementConfig>` | No       | -                | Canvas/hex configuration                                                                           |
-| `dialogConfig`        | `DialogConfig`             | No       | -                | Dialog configuration options                                                                       |
+| Prop                  | Type                       | Required | Default               | Description                                                                                        |
+| --------------------- | -------------------------- | -------- | --------------------- | -------------------------------------------------------------------------------------------------- |
+| `stories`             | `Story<T>[]`               | Yes      | -                     | Array of stories to visualize                                                                      |
+| `embeddings`          | `Map<string, number[]>`    | Yes      | -                     | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
+| `themes`              | `Theme[]`                  | Yes      | -                     | Pre-generated themes. Can be empty array if not yet loaded.                                        |
+| `loading`             | `boolean`                  | No       | -                     | Loading state to show shimmer while data is being fetched                                          |
+| `openaiApiKey`        | `string`                   | No       | -                     | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
+| `apiEndpoint`         | `string`                   | No       | -                     | Custom endpoint used by helper utilities in server-side mode                                       |
+| `colorPalette`        | `string[]`                 | No       | Warm palette          | Array of hex color strings                                                                         |
+| `onHexClick`          | `(story, theme) => void`   | No       | -                     | Callback when a hex is clicked                                                                     |
+| `renderStory`         | `(story) => ReactNode`     | No       | Default renderer      | Custom story renderer for dialog                                                                   |
+| `onError`             | `(error) => void`          | No       | -                     | Error handler callback                                                                             |
+| `onThemesChange`      | `(themes) => void`         | No       | -                     | Callback when themes are updated                                                                   |
+| `onAssignmentsChange` | `(assignments) => void`    | No       | -                     | Callback when story-to-theme assignments change                                                    |
+| `className`           | `string`                   | No       | -                     | Additional CSS classes                                                                             |
+| `canvasWidth`         | `number \| string`         | No       | `100%`                | Optional canvas width. Numbers are treated as pixel values; strings can be any CSS length.         |
+| `canvasHeight`        | `number \| string`         | No       | `calc(100vh - 312px)` | Optional canvas height. Numbers are treated as pixel values; strings can be any CSS length.        |
+| `config`              | `Partial<PlacementConfig>` | No       | -                     | Canvas/hex configuration (used as internal defaults for placement math).                           |
+| `dialogConfig`        | `DialogConfig`             | No       | -                     | Dialog configuration options                                                                       |
 
 #### Types
 
@@ -410,7 +469,8 @@ Errors can be handled in two ways:
 ```tsx
 <LivingHive
   stories={stories}
-  openaiApiKey="your-api-key"
+  embeddings={embeddings}
+  themes={themes}
   onError={error => {
     // Send to error tracking service
     Sentry.captureException(error)
