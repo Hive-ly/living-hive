@@ -18,7 +18,7 @@ interface UseUMAPPlacementReturn {
   computePlacement: (
     stories: StoryWithEmbedding[],
     norm: UMAPNormalization,
-    config?: Partial<PlacementConfig>
+    config?: Partial<PlacementConfig>,
   ) => Promise<PlacementResult>
   loading: boolean
   error: string | null
@@ -49,7 +49,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
     } catch (err) {
       console.error('useUMAPPlacement: Failed to create worker:', err)
       setError(
-        `Failed to initialize web worker: ${err instanceof Error ? err.message : String(err)}`
+        `Failed to initialize web worker: ${err instanceof Error ? err.message : String(err)}`,
       )
     }
 
@@ -65,7 +65,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
     async (
       stories: StoryWithEmbedding[],
       norm: UMAPNormalization,
-      config: Partial<PlacementConfig> = {}
+      config: Partial<PlacementConfig> = {},
     ): Promise<PlacementResult> => {
       if (stories.length === 0) {
         return { placements: new Map() }
@@ -99,9 +99,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
           if (event.data.type === 'placementResult') {
             setLoading(false)
             resolve({
-              placements: new Map(
-                event.data.placements as Array<[string, HexCoordinate]>
-              ),
+              placements: new Map(event.data.placements as Array<[string, HexCoordinate]>),
               umapCoords: event.data.umapCoords,
             })
           } else if (event.data.type === 'error') {
@@ -124,7 +122,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
         })
       })
     },
-    []
+    [],
   )
 
   return {
@@ -133,4 +131,3 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
     error,
   }
 }
-

@@ -20,10 +20,17 @@ export default defineConfig(({ mode }) => {
           entry: resolve(__dirname, 'src/index.ts'),
           name: 'LivingHiveReact',
           formats: ['es', 'umd'],
-          fileName: (format) => `living-hive-react.${format === 'es' ? 'js' : 'umd.cjs'}`,
+          fileName: format => `living-hive-react.${format === 'es' ? 'js' : 'umd.cjs'}`,
         },
         rollupOptions: {
-          external: ['react', 'react-dom', 'tailwindcss', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+          external: [
+            'react',
+            'react-dom',
+            'tailwindcss',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+          ],
           output: {
             globals: {
               react: 'React',

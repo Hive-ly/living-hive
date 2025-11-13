@@ -36,11 +36,11 @@ npm install react react-dom tailwindcss class-variance-authority clsx tailwind-m
 
 ### Basic Usage
 
-You need to generate embeddings and themes before passing them to the `LivingHive` component. Here's how:
+You need to generate embeddings and themes before passing them to the `LivingHive` component. Living Hive does not include network helpers in the public API, so you can source embeddings and themes from your own data pipeline or reuse the mock data shipped in `examples/`.
 
 ```tsx
-import { LivingHive, StoryDataGenerator } from '@living-hive/react'
-import { useState, useEffect } from 'react'
+import { LivingHive, type BaseStory, type Theme } from '@living-hive/react'
+import { useMemo, useState } from 'react'
 
 function App() {
   const stories = [
@@ -48,33 +48,20 @@ function App() {
     { id: '2', text: 'Another story about collaboration...' },
   ]
 
-  const [embeddings, setEmbeddings] = useState<Map<string, number[]>>(new Map())
-  const [themes, setThemes] = useState<Theme[]>([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    const generateData = async () => {
-      setLoading(true)
-      const generator = new StoryDataGenerator(stories, 'your-api-key-here')
-      
-      const embeddings = await generator.generateEmbeddings()
-      const themes = await generator.generateThemes(embeddings)
-      
-      setEmbeddings(embeddings)
-      setThemes(themes)
-      setLoading(false)
-    }
-    generateData()
-  }, [stories])
-
-  return (
-    <LivingHive
-      stories={stories}
-      embeddings={embeddings}
-      themes={themes}
-      loading={loading}
-    />
+  // Provide embeddings and themes from your own data pipeline.
+  const [embeddings] = useState(
+    () =>
+      new Map<string, number[]>([
+        ['1', [0.1, 0.2, 0.3]],
+        ['2', [0.3, 0.1, 0.4]],
+      ]),
   )
+  const [themes] = useState<Theme[]>([
+    { id: 'teamwork', label: 'Teamwork' },
+    { id: 'collaboration', label: 'Collaboration' },
+  ])
+
+  return <LivingHive stories={stories} embeddings={embeddings} themes={themes} />
 }
 ```
 
@@ -83,28 +70,24 @@ function App() {
 For faster loading and to avoid API calls, you can pre-generate embeddings and themes:
 
 ```tsx
-import { LivingHive } from '@living-hive/react'
+import { LivingHive, type BaseStory, type Theme } from '@living-hive/react'
 
-// Pre-generated embeddings (Map<storyId, embedding>)
-const embeddings = new Map([
-  ['1', [0.1, 0.2, ...]], // 384-dimensional vector
-  ['2', [0.3, 0.4, ...]],
-])
-
-// Pre-generated themes
-const themes = [
-  { id: 'theme-1', label: 'Teamwork' },
-  { id: 'theme-2', label: 'Collaboration' },
+const stories: BaseStory[] = [
+  { id: '1', text: 'Story about teamwork' },
+  { id: '2', text: 'Story about collaboration' },
 ]
 
-function App() {
-  return (
-    <LivingHive
-      stories={stories}
-      embeddings={embeddings}
-      themes={themes}
-    />
-  )
+const embeddings = new Map<string, number[]>(
+  stories.map((story, index) => [story.id, [index / 10, index / 5, index / 2]]),
+)
+
+const themes: Theme[] = [
+  { id: 'teamwork', label: 'Teamwork' },
+  { id: 'collaboration', label: 'Collaboration' },
+]
+
+export function App() {
+  return <LivingHive stories={stories} embeddings={embeddings} themes={themes} />
 }
 ```
 
@@ -128,13 +111,7 @@ function App() {
     generator.generateEmbeddings().then(setEmbeddings)
   }, [stories])
 
-  return (
-    <LivingHive
-      stories={stories}
-      embeddings={embeddings}
-      themes={themes}
-    />
-  )
+  return <LivingHive stories={stories} embeddings={embeddings} themes={themes} />
 }
 ```
 
@@ -156,7 +133,7 @@ const customPalette = ['#FF6E7F', '#4F81B0', '#CDB15E', '#DAA5AD', '#AEBEC5']
 <LivingHive
   stories={stories}
   openaiApiKey="your-api-key-here"
-  renderStory={(story) => (
+  renderStory={story => (
     <div>
       <h3>{story.title}</h3>
       <p>{story.text}</p>
@@ -200,9 +177,9 @@ const stories: MyStory[] = [
 
 ## Generating Embeddings and Themes
 
-The library provides helper functions and a class-based API for generating embeddings and themes. These can be used client-side, server-side, or in build scripts.
+Living Hive ships with the `StoryDataGenerator` class for producing embeddings and themes. Use it client-side, server-side, or in build scripts—whichever best fits your data pipeline.
 
-### Using StoryDataGenerator Class (Recommended)
+### Using StoryDataGenerator
 
 The `StoryDataGenerator` class stores stories and API key once, making it easy to generate embeddings and themes:
 
@@ -216,45 +193,18 @@ const generator = new StoryDataGenerator(stories, apiKey)
 const embeddings = await generator.generateEmbeddings({
   model: 'text-embedding-3-small',
   dimensions: 384,
-  batchSize: 100
+  batchSize: 100,
 })
 
 // Generate themes using the embeddings
 const themes = await generator.generateThemes(embeddings, {
   model: 'gpt-4-turbo-preview',
   minThemes: 5,
-  maxThemes: 10
+  maxThemes: 10,
 })
 
 // Assign stories to themes (synchronous)
 const assignments = generator.assignStoriesToThemes(embeddings, themes)
-```
-
-### Using Helper Functions
-
-You can also use the standalone helper functions:
-
-```tsx
-import { 
-  generateEmbeddingsForStories, 
-  generateThemesForStories,
-  assignStoriesToThemes 
-} from '@living-hive/react'
-
-// Generate embeddings
-const embeddings = await generateEmbeddingsForStories(stories, apiKey, {
-  model: 'text-embedding-3-small',
-  dimensions: 384
-})
-
-// Generate themes
-const themes = await generateThemesForStories(stories, embeddings, apiKey, {
-  minThemes: 5,
-  maxThemes: 10
-})
-
-// Assign stories to themes
-const assignments = assignStoriesToThemes(stories, embeddings, themes)
 ```
 
 ### Client-Side Usage (React)
@@ -284,14 +234,7 @@ function MyComponent() {
     generateData()
   }, [stories])
 
-  return (
-    <LivingHive
-      stories={stories}
-      embeddings={embeddings}
-      themes={themes}
-      loading={loading}
-    />
-  )
+  return <LivingHive stories={stories} embeddings={embeddings} themes={themes} loading={loading} />
 }
 ```
 
@@ -304,10 +247,10 @@ import { StoryDataGenerator } from '@living-hive/react'
 export async function GET(request: Request) {
   const stories = await getStories()
   const generator = new StoryDataGenerator(stories, process.env.OPENAI_API_KEY)
-  
+
   const embeddings = await generator.generateEmbeddings()
   const themes = await generator.generateThemes(embeddings)
-  
+
   return Response.json({ embeddings, themes })
 }
 ```
@@ -341,9 +284,10 @@ fs.writeFileSync('themes.json', JSON.stringify(themes))
 
 ### OpenAI Parameter Configuration
 
-Both the class and helper functions accept configuration options:
+`StoryDataGenerator` accepts configuration options for both embeddings and themes:
 
 **Embedding Options:**
+
 - `model?: string` - Embedding model (default: `"text-embedding-3-small"`)
 - `dimensions?: number` - Embedding dimensions (default: `384`)
 - `batchSize?: number` - Batch size for API calls (default: `100`)
@@ -351,6 +295,7 @@ Both the class and helper functions accept configuration options:
 - `onError?: (error: Error) => void` - Error callback
 
 **Theme Options:**
+
 - `model?: string` - Theme generation model (default: `"gpt-4-turbo-preview"`)
 - `minThemes?: number` - Minimum number of themes (default: `5`)
 - `maxThemes?: number` - Maximum number of themes (default: `10`)
@@ -372,22 +317,22 @@ The canvas has a visible background and border to show the visualization boundar
 
 #### Props
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `stories` | `Story<T>[]` | Yes | - | Array of stories to visualize |
-| `embeddings` | `Map<string, number[]>` | Yes | - | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
-| `themes` | `Theme[]` | Yes | - | Pre-generated themes. Can be empty array if not yet loaded. |
-| `loading` | `boolean` | No | - | Loading state to show shimmer while data is being fetched |
-| `openaiApiKey` | `string` | No | - | Not used by component (only needed for helper functions) |
-| `colorPalette` | `string[]` | No | Warm palette | Array of hex color strings |
-| `onHexClick` | `(story, theme) => void` | No | - | Callback when a hex is clicked |
-| `renderStory` | `(story) => ReactNode` | No | Default renderer | Custom story renderer for dialog |
-| `onError` | `(error) => void` | No | - | Error handler callback |
-| `onThemesChange` | `(themes) => void` | No | - | Callback when themes are updated |
-| `onAssignmentsChange` | `(assignments) => void` | No | - | Callback when story-to-theme assignments change |
-| `className` | `string` | No | - | Additional CSS classes |
-| `config` | `Partial<PlacementConfig>` | No | - | Canvas/hex configuration |
-| `dialogConfig` | `DialogConfig` | No | - | Dialog configuration options |
+| Prop                  | Type                       | Required | Default          | Description                                                                                        |
+| --------------------- | -------------------------- | -------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `stories`             | `Story<T>[]`               | Yes      | -                | Array of stories to visualize                                                                      |
+| `embeddings`          | `Map<string, number[]>`    | Yes      | -                | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
+| `themes`              | `Theme[]`                  | Yes      | -                | Pre-generated themes. Can be empty array if not yet loaded.                                        |
+| `loading`             | `boolean`                  | No       | -                | Loading state to show shimmer while data is being fetched                                          |
+| `openaiApiKey`        | `string`                   | No       | -                | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
+| `colorPalette`        | `string[]`                 | No       | Warm palette     | Array of hex color strings                                                                         |
+| `onHexClick`          | `(story, theme) => void`   | No       | -                | Callback when a hex is clicked                                                                     |
+| `renderStory`         | `(story) => ReactNode`     | No       | Default renderer | Custom story renderer for dialog                                                                   |
+| `onError`             | `(error) => void`          | No       | -                | Error handler callback                                                                             |
+| `onThemesChange`      | `(themes) => void`         | No       | -                | Callback when themes are updated                                                                   |
+| `onAssignmentsChange` | `(assignments) => void`    | No       | -                | Callback when story-to-theme assignments change                                                    |
+| `className`           | `string`                   | No       | -                | Additional CSS classes                                                                             |
+| `config`              | `Partial<PlacementConfig>` | No       | -                | Canvas/hex configuration                                                                           |
+| `dialogConfig`        | `DialogConfig`             | No       | -                | Dialog configuration options                                                                       |
 
 #### Types
 
@@ -420,55 +365,13 @@ const generator = new StoryDataGenerator<T extends BaseStory>(
 
 // Methods:
 await generator.generateEmbeddings(options?: GenerateEmbeddingsOptions): Promise<Map<string, number[]>>
-await generator.generateThemes(embeddings: Map<string, number[]>, options?: GenerateThemesOptions): Promise<Theme[]>
-generator.assignStoriesToThemes(embeddings: Map<string, number[]>, themes: Theme[]): Map<string, string>
+await generator.generateThemes(embeddings?: Map<string, number[]>, options?: GenerateThemesOptions): Promise<Theme[]>
+generator.assignStoriesToThemes(embeddings?: Map<string, number[]>, themes?: Theme[]): Map<string, string>
 ```
 
-### Helper Functions
+### `useUMAPPlacement` Hook
 
-```typescript
-// Generate embeddings
-await generateEmbeddingsForStories<T>(
-  stories: T[],
-  apiKey: string,
-  options?: GenerateEmbeddingsOptions
-): Promise<Map<string, number[]>>
-
-// Generate themes
-await generateThemesForStories<T>(
-  stories: T[],
-  embeddings: Map<string, number[]>,
-  apiKey: string,
-  options?: GenerateThemesOptions
-): Promise<Theme[]>
-
-// Assign stories to themes
-assignStoriesToThemes<T>(
-  stories: T[],
-  embeddings: Map<string, number[]>,
-  themes: Theme[]
-): Map<string, string>
-```
-
-### Hooks
-
-Hooks are available for React components but are not required. The component now requires embeddings and themes as props.
-
-#### `useEmbeddings`
-
-```typescript
-const { generateEmbeddingsForStories, loading, error } = useEmbeddings(onError)
-// generateEmbeddingsForStories now accepts options?: GenerateEmbeddingsOptions
-```
-
-#### `useThemes`
-
-```typescript
-const { generateThemesFromStories, assignStories, loading, error } = useThemes()
-// generateThemesFromStories now accepts options?: GenerateThemesOptions
-```
-
-#### `useUMAPPlacement`
+If you prefer a hook for computing coordinates inside your own components, `useUMAPPlacement` remains available:
 
 ```typescript
 const { computePlacement, loading, error } = useUMAPPlacement()
@@ -491,6 +394,7 @@ const { computePlacement, loading, error } = useUMAPPlacement()
 ## Accessibility
 
 The component includes:
+
 - ARIA labels and roles
 - Keyboard navigation support
 - Focus management
@@ -507,7 +411,7 @@ Errors can be handled in two ways:
 <LivingHive
   stories={stories}
   openaiApiKey="your-api-key"
-  onError={(error) => {
+  onError={error => {
     // Send to error tracking service
     Sentry.captureException(error)
   }}
@@ -539,9 +443,9 @@ Example Netlify Function:
 ```typescript
 import { Handler } from '@netlify/functions'
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = async event => {
   const { text } = JSON.parse(event.body || '{}')
-  
+
   const response = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
     headers: {
@@ -554,9 +458,9 @@ export const handler: Handler = async (event) => {
       dimensions: 384,
     }),
   })
-  
+
   const data = await response.json()
-  
+
   return {
     statusCode: 200,
     body: JSON.stringify({ embedding: data.data[0].embedding }),
@@ -565,6 +469,22 @@ export const handler: Handler = async (event) => {
 ```
 
 ## Development Scripts
+
+### Quality and Testing
+
+Run these commands before opening a pull request:
+
+```bash
+# Static analysis
+npm run lint
+npm run format:check
+npm run type-check
+
+# Unit tests
+npm test
+```
+
+### Data Utilities
 
 The project includes several utility scripts:
 
@@ -613,6 +533,7 @@ The examples app will start at `http://localhost:5173`.
 To use pre-generated embeddings and themes:
 
 1. Generate the data once:
+
    ```bash
    npm run fetch-stories      # Fetch and sanitize stories
    npm run regenerate-embeddings  # Generate embeddings
@@ -620,6 +541,7 @@ To use pre-generated embeddings and themes:
    ```
 
 2. Set environment variable:
+
    ```bash
    VITE_USE_MOCK_EMBEDDINGS=true
    ```
@@ -638,6 +560,7 @@ The examples directory includes a `netlify.toml` configuration file. To deploy:
 ## Default Color Palette
 
 The default warm color palette includes:
+
 - `#4F81B0` - Blue
 - `#AEBEC5` - Light Gray
 - `#DAA5AD` - Pink
@@ -660,4 +583,5 @@ MIT
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for detailed guidelines on
+development workflow, testing, and pull request expectations.

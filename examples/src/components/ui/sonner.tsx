@@ -1,13 +1,7 @@
-"use client"
+'use client'
 
-import {
-  CheckCircle2,
-  Info,
-  Loader2,
-  XCircle,
-  AlertTriangle,
-} from "lucide-react"
-import { Toaster as Sonner, ToasterProps } from "sonner"
+import { CheckCircle2, Info, Loader2, XCircle, AlertTriangle } from 'lucide-react'
+import { Toaster as Sonner, ToasterProps } from 'sonner'
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -23,10 +17,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "hsl(var(--popover))",
-          "--normal-text": "hsl(var(--popover-foreground))",
-          "--normal-border": "hsl(var(--border))",
-          "--border-radius": "0.5rem",
+          '--normal-bg': 'hsl(var(--popover))',
+          '--normal-text': 'hsl(var(--popover-foreground))',
+          '--normal-border': 'hsl(var(--border))',
+          '--border-radius': '0.5rem',
         } as React.CSSProperties
       }
       {...props}
@@ -35,4 +29,3 @@ const Toaster = ({ ...props }: ToasterProps) => {
 }
 
 export { Toaster }
-

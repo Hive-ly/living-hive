@@ -1,0 +1,8 @@
+dist
+node_modules
+examples
+coverage
+*.config.ts
+scripts
+src/public
+

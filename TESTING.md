@@ -47,6 +47,7 @@ To test the client-side embedding generation, you'll need an OpenAI API key:
 To test without making API calls:
 
 1. Generate pre-computed data:
+
    ```bash
    npm run fetch-stories          # Fetch stories from Reddit
    npm run regenerate-embeddings  # Generate embeddings
@@ -54,6 +55,7 @@ To test without making API calls:
    ```
 
 2. Set environment variable:
+
    ```bash
    VITE_USE_MOCK_EMBEDDINGS=true
    ```
@@ -71,6 +73,7 @@ npm run build
 ```
 
 This will:
+
 - Type-check the code
 - Build the library in both ESM and UMD formats
 - Generate TypeScript definitions
@@ -86,11 +89,13 @@ npm run type-check
 ### Option 1: Link the Package Locally
 
 1. Build the library:
+
    ```bash
    npm run build
    ```
 
 2. Link it (from the library root):
+
    ```bash
    npm link
    ```
@@ -142,7 +147,7 @@ function App() {
     <LivingHive
       stories={stories}
       openaiApiKey="your-api-key-here"
-      onError={(error) => console.error('Error:', error)}
+      onError={error => console.error('Error:', error)}
     />
   )
 }
@@ -153,6 +158,7 @@ function App() {
 ### "Module not found" errors
 
 Make sure you've installed all peer dependencies:
+
 ```bash
 npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge
 ```
@@ -177,4 +183,3 @@ Run `npm run type-check` to verify types are correct.
 - Read the full README.md for API documentation
 - Customize colors, themes, and story rendering
 - Deploy the example app to Netlify using the included `netlify.toml`
-

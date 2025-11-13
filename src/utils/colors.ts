@@ -12,7 +12,7 @@ export const DEFAULT_COLOR_PALETTE: ColorPalette = [
 // Assign colors to themes from palette (round-robin)
 export function assignColorsToThemes(
   themes: Theme[],
-  palette: ColorPalette = DEFAULT_COLOR_PALETTE
+  palette: ColorPalette = DEFAULT_COLOR_PALETTE,
 ): Map<string, string> {
   const colorMap = new Map<string, string>()
 
@@ -28,7 +28,7 @@ export function assignColorsToThemes(
 export function getThemeColor(
   themeId: string,
   themes: Theme[],
-  palette: ColorPalette = DEFAULT_COLOR_PALETTE
+  palette: ColorPalette = DEFAULT_COLOR_PALETTE,
 ): string {
   const themeIndex = themes.findIndex(t => t.id === themeId)
   if (themeIndex === -1) return palette[0]
@@ -78,4 +78,3 @@ export function hslToString(h: number, s: number, l: number, alpha?: number): st
   }
   return `hsl(${h}, ${s}%, ${l}%)`
 }
-

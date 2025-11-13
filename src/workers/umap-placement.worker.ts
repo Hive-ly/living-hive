@@ -7,28 +7,53 @@ import type {
   PlacementConfig,
   StoryWithEmbedding,
 } from '../types'
+import type { UMAP as UMAPType } from 'umap-js'
 
-let UMAP: any = null
+type UMAPConstructor = typeof UMAPType
+
+let UMAPCtor: UMAPConstructor | null = null
 
 // Load UMAP library dynamically
-async function loadUMAP() {
-  if (UMAP) return UMAP
+async function loadUMAP(): Promise<UMAPConstructor> {
+  if (UMAPCtor) return UMAPCtor
 
   try {
-    const umapModule = await import('umap-js')
-    UMAP = umapModule.UMAP || umapModule.default?.UMAP || umapModule.default
+    const umapModule: unknown = await import('umap-js')
 
-    if (!UMAP) {
+    let resolved: UMAPConstructor | undefined
+
+    if (typeof umapModule === 'function') {
+      resolved = umapModule as UMAPConstructor
+    } else if (typeof umapModule === 'object' && umapModule !== null) {
+      if ('UMAP' in umapModule && typeof (umapModule as { UMAP?: unknown }).UMAP === 'function') {
+        resolved = (umapModule as { UMAP: unknown }).UMAP as UMAPConstructor
+      } else {
+        const defaultExport = (umapModule as { default?: unknown }).default
+        if (typeof defaultExport === 'function') {
+          resolved = defaultExport as UMAPConstructor
+        } else if (
+          defaultExport &&
+          typeof defaultExport === 'object' &&
+          'UMAP' in defaultExport &&
+          typeof (defaultExport as { UMAP?: unknown }).UMAP === 'function'
+        ) {
+          resolved = (defaultExport as { UMAP: unknown }).UMAP as UMAPConstructor
+        }
+      }
+    }
+
+    if (!resolved) {
       throw new Error('UMAP class not found in umap-js package')
     }
+
+    UMAPCtor = resolved
+    return UMAPCtor
   } catch (e) {
     throw new Error(
       `Failed to load UMAP library: ${e instanceof Error ? e.message : String(e)}. ` +
-        `Please install: npm install umap-js`
+        `Please install: npm install umap-js`,
     )
   }
-
-  return UMAP
 }
 
 interface ComputePlacementMessage {
@@ -49,8 +74,6 @@ interface ErrorMessage {
   error: string
 }
 
-type WorkerMessage = ComputePlacementMessage | ErrorMessage
-
 const DEFAULT_CONFIG: PlacementConfig = {
   canvasWidth: 900,
   canvasHeight: 600,
@@ -59,10 +82,7 @@ const DEFAULT_CONFIG: PlacementConfig = {
 }
 
 // Hex utility functions
-function pixelToHex(
-  pixel: { x: number; y: number },
-  hexRadius: number
-): HexCoordinate {
+function pixelToHex(pixel: { x: number; y: number }, hexRadius: number): HexCoordinate {
   const q = ((2 / 3) * pixel.x) / hexRadius
   const r = ((-1 / 3) * pixel.x + (Math.sqrt(3) / 3) * pixel.y) / hexRadius
   return cubeRound({ q, r, s: -q - r })
@@ -107,7 +127,7 @@ function getHexNeighbors(hex: HexCoordinate): HexCoordinate[] {
 function findAvailableHex(
   center: HexCoordinate,
   occupied: Set<string>,
-  maxRadius: number = 200
+  maxRadius: number = 200,
 ): HexCoordinate | null {
   const centerKey = `${center.q},${center.r}`
   if (!occupied.has(centerKey)) {
@@ -136,11 +156,7 @@ function findAvailableHex(
   return null
 }
 
-function normalizeUMAP(
-  x: number,
-  y: number,
-  norm: UMAPNormalization
-): { nx: number; ny: number } {
+function normalizeUMAP(x: number, y: number, norm: UMAPNormalization): { nx: number; ny: number } {
   const nx = (x - norm.min_x) / (norm.max_x - norm.min_x)
   const ny = (y - norm.min_y) / (norm.max_y - norm.min_y)
 
@@ -155,7 +171,7 @@ function placeStory(
   umapY: number,
   norm: UMAPNormalization,
   occupiedCells: Set<string>,
-  config: PlacementConfig = DEFAULT_CONFIG
+  config: PlacementConfig = DEFAULT_CONFIG,
 ): HexCoordinate {
   const { nx, ny } = normalizeUMAP(umapX, umapY, norm)
   const { canvasWidth, canvasHeight, hexRadius, margin } = config
@@ -178,9 +194,7 @@ function placeStory(
 }
 
 // Compute UMAP from embeddings and place stories
-async function computePlacement(
-  message: ComputePlacementMessage
-): Promise<PlacementResultMessage> {
+async function computePlacement(message: ComputePlacementMessage): Promise<PlacementResultMessage> {
   const { stories, norm, config } = message
 
   if (stories.length === 0) {
@@ -210,7 +224,7 @@ async function computePlacement(
     spread: 1.0,
   })
 
-  const umapCoords = umap.fit(embeddings) as number[][]
+  const umapCoords = umap.fit(embeddings)
 
   const storyUMAP = new Map<string, { x: number; y: number }>()
   stories.forEach((story, index) => {
@@ -236,13 +250,7 @@ async function computePlacement(
     const umapCoord = storyUMAP.get(story.id)
     if (!umapCoord) continue
 
-    const hexCoord = placeStory(
-      umapCoord.x,
-      umapCoord.y,
-      norm,
-      occupiedCells,
-      config
-    )
+    const hexCoord = placeStory(umapCoord.x, umapCoord.y, norm, occupiedCells, config)
 
     placements.set(story.id, hexCoord)
     occupiedCells.add(`${hexCoord.q},${hexCoord.r}`)
@@ -262,23 +270,16 @@ async function computePlacement(
 }
 
 // Handle messages from main thread
-self.addEventListener('message', async (event: MessageEvent<WorkerMessage>) => {
+self.addEventListener('message', async (event: MessageEvent<ComputePlacementMessage>) => {
   try {
-    if (event.data.type === 'computePlacement') {
-      const result = await computePlacement(event.data)
-      self.postMessage(result)
-    } else {
-      self.postMessage({
-        type: 'error',
-        error: `Unknown message type: ${(event.data as any).type}`,
-      } as ErrorMessage)
-    }
+    const result = await computePlacement(event.data)
+    self.postMessage(result)
   } catch (error) {
     console.error('UMAP Worker: Error in message handler:', error)
-    self.postMessage({
+    const errorMessage: ErrorMessage = {
       type: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
-    } as ErrorMessage)
+    }
+    self.postMessage(errorMessage)
   }
 })
-

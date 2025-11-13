@@ -39,7 +39,7 @@ Canvas Pixel Position
 
 - **Input**: Array of 384-dimensional embeddings (one per story)
 - **Output**: Array of 2D coordinates (x, y) - one per story
-- **What it preserves**: 
+- **What it preserves**:
   - Stories that are close in 384D space stay close in 2D space
   - Local neighborhoods (similar stories cluster together)
   - Global structure (distant stories stay distant)
@@ -60,7 +60,7 @@ Canvas Pixel Position
 
 1. **Embeddings determine UMAP placement**: UMAP takes the embeddings as input. The 2D positions you see are directly computed from the embedding vectors.
 
-2. **Semantic similarity → Spatial proximity**: 
+2. **Semantic similarity → Spatial proximity**:
    - Stories with similar embeddings → Close in 384D space
    - UMAP preserves this → Close in 2D space
    - Result: Semantically similar stories appear near each other in the visualization
@@ -105,4 +105,3 @@ Even though A and C both have the "collaboration" theme, if their embeddings are
 - **Connection**: UMAP uses embeddings as input, so semantically similar stories (similar embeddings) appear close together in the visualization
 
 The visualization shows semantic relationships (via UMAP) with color coding by themes (via clustering). Both use the same embeddings, but serve different purposes: UMAP for spatial layout, clustering for categorization.
-

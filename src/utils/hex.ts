@@ -3,31 +3,21 @@
 import type { HexCoordinate, PixelCoordinate } from '../types'
 
 // Convert axial coordinates to pixel coordinates
-export function hexToPixel(
-  hex: HexCoordinate,
-  hexRadius: number
-): PixelCoordinate {
+export function hexToPixel(hex: HexCoordinate, hexRadius: number): PixelCoordinate {
   const x = hexRadius * ((3 / 2) * hex.q)
   const y = hexRadius * ((Math.sqrt(3) / 2) * hex.q + Math.sqrt(3) * hex.r)
   return { x, y }
 }
 
 // Convert pixel coordinates to axial coordinates
-export function pixelToHex(
-  pixel: PixelCoordinate,
-  hexRadius: number
-): HexCoordinate {
+export function pixelToHex(pixel: PixelCoordinate, hexRadius: number): HexCoordinate {
   const q = ((2 / 3) * pixel.x) / hexRadius
   const r = ((-1 / 3) * pixel.x + (Math.sqrt(3) / 3) * pixel.y) / hexRadius
   return cubeRound({ q, r, s: -q - r })
 }
 
 // Cube rounding for fractional hex coordinates
-export function cubeRound(cube: {
-  q: number
-  r: number
-  s: number
-}): HexCoordinate {
+export function cubeRound(cube: { q: number; r: number; s: number }): HexCoordinate {
   let rq = Math.round(cube.q)
   let rr = Math.round(cube.r)
   let rs = Math.round(cube.s)
@@ -66,19 +56,14 @@ export function getHexNeighbors(hex: HexCoordinate): HexCoordinate[] {
 
 // Calculate distance between two hexes
 export function hexDistance(a: HexCoordinate, b: HexCoordinate): number {
-  return (
-    (Math.abs(a.q - b.q) +
-      Math.abs(a.q + a.r - b.q - b.r) +
-      Math.abs(a.r - b.r)) /
-    2
-  )
+  return (Math.abs(a.q - b.q) + Math.abs(a.q + a.r - b.q - b.r) + Math.abs(a.r - b.r)) / 2
 }
 
 // Spiral search for available hex positions
 export function findAvailableHex(
   center: HexCoordinate,
   occupied: Set<string>,
-  maxRadius: number = 10
+  maxRadius: number = 10,
 ): HexCoordinate | null {
   // Check center first
   const centerKey = `${center.q},${center.r}`
@@ -115,7 +100,7 @@ export function findAvailableHex(
 export function generateClusterHexes(
   center: HexCoordinate,
   size: number,
-  occupied: Set<string>
+  occupied: Set<string>,
 ): HexCoordinate[] {
   const hexes: HexCoordinate[] = []
   const newOccupied = new Set(occupied)
@@ -130,7 +115,7 @@ export function generateClusterHexes(
   // Add hexes in expanding rings
   for (let i = 1; i < size; i++) {
     const availableNeighbors = getHexNeighbors(currentCenter).filter(
-      hex => !newOccupied.has(`${hex.q},${hex.r}`)
+      hex => !newOccupied.has(`${hex.q},${hex.r}`),
     )
 
     if (availableNeighbors.length === 0) {
@@ -180,4 +165,3 @@ export function getMaxHexes(): number {
   if (width < 1024) return 600 // tablet
   return 2000 // desktop: full viz
 }
-
