@@ -82,7 +82,7 @@ npm run type-check
 
 3. In your test project:
    ```bash
-   npm link @living-hive/react
+   npm link @hively/living-hive
    ```
 
 ### Option 2: Use Workspace (if using pnpm/yarn workspaces)
@@ -92,7 +92,7 @@ If your project uses workspaces, you can add:
 ```json
 {
   "dependencies": {
-    "@living-hive/react": "workspace:*"
+    "@hively/living-hive": "workspace:*"
   }
 }
 ```
@@ -104,7 +104,7 @@ In your test project's `package.json`:
 ```json
 {
   "dependencies": {
-    "@living-hive/react": "file:../living-hive"
+    "@hively/living-hive": "file:../living-hive"
   }
 }
 ```
@@ -114,8 +114,8 @@ Then run `npm install`.
 ## Example Usage in Your Test Project
 
 ```tsx
-import { LivingHive } from '@living-hive/react'
-import '@living-hive/react/dist/style.css' // If you include styles
+import { LivingHive } from '@hively/living-hive'
+import '@hively/living-hive/dist/style.css' // If you include styles
 
 function App() {
   const stories = [

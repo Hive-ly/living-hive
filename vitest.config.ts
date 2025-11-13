@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@living-hive/react': resolve(__dirname, 'src'),
+      '@hively/living-hive': resolve(__dirname, 'src'),
     },
   },
   test: {

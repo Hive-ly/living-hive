@@ -19,7 +19,7 @@ A React library for visualizing interconnected stories using UMAP dimensionality
 ## Installation
 
 ```bash
-npm install @living-hive/react
+npm install @hively/living-hive
 ```
 
 ## Peer Dependencies
@@ -39,7 +39,7 @@ npm install react react-dom tailwindcss class-variance-authority clsx tailwind-m
 You need to generate embeddings and themes before passing them to the `LivingHive` component. Living Hive does not include network helpers in the public API, so you can source embeddings and themes from your own data pipeline or reuse the mock data shipped in `examples/`.
 
 ```tsx
-import { LivingHive, type BaseStory, type Theme } from '@living-hive/react'
+import { LivingHive, type BaseStory, type Theme } from '@hively/living-hive'
 import { useMemo, useState } from 'react'
 
 function App() {
@@ -70,7 +70,7 @@ function App() {
 For faster loading and to avoid API calls, you can pre-generate embeddings and themes:
 
 ```tsx
-import { LivingHive, type BaseStory, type Theme } from '@living-hive/react'
+import { LivingHive, type BaseStory, type Theme } from '@hively/living-hive'
 
 const stories: BaseStory[] = [
   { id: '1', text: 'Story about teamwork' },
@@ -96,7 +96,7 @@ export function App() {
 ### With Custom Themes
 
 ```tsx
-import { LivingHive, StoryDataGenerator, type Theme } from '@living-hive/react'
+import { LivingHive, StoryDataGenerator, type Theme } from '@hively/living-hive'
 import { useState, useEffect } from 'react'
 
 function App() {
@@ -248,7 +248,7 @@ Living Hive ships with the `StoryDataGenerator` class for producing embeddings a
 The `StoryDataGenerator` class stores stories and API key once, making it easy to generate embeddings and themes:
 
 ```tsx
-import { StoryDataGenerator } from '@living-hive/react'
+import { StoryDataGenerator } from '@hively/living-hive'
 
 // Create generator with stories and API key
 const generator = new StoryDataGenerator(stories, apiKey)
@@ -274,7 +274,7 @@ const assignments = generator.assignStoriesToThemes(embeddings, themes)
 ### Client-Side Usage (React)
 
 ```tsx
-import { StoryDataGenerator } from '@living-hive/react'
+import { StoryDataGenerator } from '@hively/living-hive'
 import { useState, useEffect } from 'react'
 
 function MyComponent() {
@@ -306,7 +306,7 @@ function MyComponent() {
 
 ```tsx
 // In Next.js API route or similar
-import { StoryDataGenerator } from '@living-hive/react'
+import { StoryDataGenerator } from '@hively/living-hive'
 
 export async function GET(request: Request) {
   const stories = await getStories()
@@ -323,7 +323,7 @@ export async function GET(request: Request) {
 
 ```tsx
 // In build script or pre-computation script
-import { StoryDataGenerator } from '@living-hive/react'
+import { StoryDataGenerator } from '@hively/living-hive'
 import fs from 'fs'
 
 const stories = [...]

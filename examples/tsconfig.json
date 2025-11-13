@@ -3,7 +3,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@living-hive/react": ["../src"]
+      "@hively/living-hive": ["../src"]
     }
   },
   "include": ["src"],

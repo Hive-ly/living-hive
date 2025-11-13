@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
     envDir: resolve(__dirname), // Look for .env files in root directory
     resolve: {
       alias: {
-        '@living-hive/react': resolve(__dirname, 'src'),
+        '@hively/living-hive': resolve(__dirname, 'src'),
       },
     },
     server: {

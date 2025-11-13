@@ -1,5 +1,5 @@
 {
-  "name": "@living-hive/react",
+  "name": "@hively/living-hive",
   "version": "0.1.0",
   "description": "A React library for visualizing interconnected stories using UMAP and hex grid layouts",
   "type": "module",
@@ -16,10 +16,20 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hiv-ely/living-hive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hive-ly/living-hive/issues"
+  },
+  "homepage": "https://github.com/hive-ly/living-hive#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build --mode library",
     "build:examples": "vite build",
+    "prepare": "npm run build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
