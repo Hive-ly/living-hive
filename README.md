@@ -183,6 +183,14 @@ const themes: Theme[] = [{ id: 'teamwork', label: 'Teamwork' }]
 />
 ```
 
+## Understanding Embeddings and Themes
+
+Embeddings are numerical vectors that capture the meaning of each story. Living Hive typically generates them with OpenAI's `text-embedding-3-small` model, which converts every story's text into a fixed-length array of numbers. Stories that discuss similar ideas end up with vectors that are close together in multidimensional space. The visualization uses those distances to place related stories near one another when UMAP projects the vectors down to the hex grid.
+
+Themes are concise narrative labels that explain why clusters of stories belong together. After embeddings are computed, Living Hive prompts a language model (defaults to `gpt-4-turbo-preview`) to summarize the clusters and produce human-readable theme names. You can think of themes as the legend for the map: they describe the neighborhoods formed by the embeddings and act as the connective tissue between the qualitative stories and the quantitative placement.
+
+Both embeddings and themes can be generated anywhere—client, server, or build scripts—and then shipped with your app. The component simply needs a `Map` of story IDs to embedding vectors plus an array of theme objects; how you produce them is up to your data pipeline.
+
 ## Custom Styling
 
 `LivingHive` ships with a set of CSS custom properties so you can restyle the experience without forking the component. The library injects the styles automatically; opt into the default charcoal palette by wrapping the component in the provided `.living-hive-theme` class:
