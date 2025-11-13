@@ -30,6 +30,7 @@
     "build": "tsc && vite build --mode library",
     "build:examples": "vite build",
     "prepare": "npm run build",
+    "preversion": "npm run build && npm test",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
@@ -41,7 +42,11 @@
     "test:coverage": "vitest run --coverage",
     "regenerate-embeddings": "tsx scripts/regenerate-embeddings.ts",
     "regenerate-themes": "tsx scripts/regenerate-themes.ts",
-    "fetch-stories": "tsx scripts/fetch-reddit-stories.ts"
+    "fetch-stories": "tsx scripts/fetch-reddit-stories.ts",
+    "version:patch": "npm version patch --git-tag-version true",
+    "version:minor": "npm version minor --git-tag-version true",
+    "version:major": "npm version major --git-tag-version true",
+    "postversion": "git push --follow-tags"
   },
   "keywords": [
     "react",
