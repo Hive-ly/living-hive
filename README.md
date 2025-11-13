@@ -39,7 +39,7 @@ npm install react react-dom tailwindcss class-variance-authority clsx tailwind-m
 You need to generate embeddings and themes before passing them to the `LivingHive` component. Living Hive does not include network helpers in the public API, so you can source embeddings and themes from your own data pipeline or reuse the mock data shipped in `examples/`.
 
 ```tsx
-import { LivingHive, type BaseStory, type Theme } from '@hively/living-hive'
+import { LivingHive, DEFAULT_WORKER_URL, type BaseStory, type Theme } from '@hively/living-hive'
 import { useMemo, useState } from 'react'
 
 function App() {
@@ -61,7 +61,14 @@ function App() {
     { id: 'collaboration', label: 'Collaboration' },
   ])
 
-  return <LivingHive stories={stories} embeddings={embeddings} themes={themes} />
+  return (
+    <LivingHive
+      stories={stories}
+      embeddings={embeddings}
+      themes={themes}
+      workerUrl={DEFAULT_WORKER_URL}
+    />
+  )
 }
 ```
 
@@ -92,6 +99,28 @@ export function App() {
 ```
 
 **Note**: When using pre-generated embeddings and themes, no API calls are made. This is ideal for deployed examples or when you want to avoid API costs.
+
+### Configuring the UMAP worker asset
+
+The UMAP algorithm now runs in a standalone worker that ships with the package at `dist/workers/umap-worker.js`. Living Hive resolves the worker URL using three fallbacks (first match wins):
+
+1. The `workerUrl` prop passed to `LivingHive` or `useUMAPPlacement`
+2. The `VITE_LIVING_HIVE_WORKER_URL`, `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL`, or `LIVING_HIVE_WORKER_URL` environment variables exposed by your bundler
+3. The built-in `DEFAULT_WORKER_URL` (`/workers/umap-worker.js`)
+
+Make sure the worker file is hosted at whichever path you return. Common setups:
+
+- **Vite / Create React App** – copy `dist/workers/umap-worker.js` into `public/workers/` and either rely on the default URL or set `VITE_LIVING_HIVE_WORKER_URL=/workers/umap-worker.js`
+- **Next.js** – place the worker in `public/umap-worker.js` and set `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL=/umap-worker.js`, or pass `<LivingHive workerUrl="/umap-worker.js" />`
+- **CDN** – upload the worker to your CDN and point to it directly: `<LivingHive workerUrl="https://cdn.yoursite.com/workers/umap-worker.js" />`
+
+When working inside this repository’s `examples/` app, the example imports the worker via Vite’s `?worker&url` syntax so the dev server can serve it without extra copying:
+
+```tsx
+import umapWorkerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
+
+<LivingHive workerUrl={umapWorkerUrl} ... />
+```
 
 ### With Custom Themes
 
@@ -381,25 +410,27 @@ The canvas has a visible background and border to show the visualization boundar
 
 #### Props
 
-| Prop                  | Type                       | Required | Default               | Description                                                                                        |
-| --------------------- | -------------------------- | -------- | --------------------- | -------------------------------------------------------------------------------------------------- |
-| `stories`             | `Story<T>[]`               | Yes      | -                     | Array of stories to visualize                                                                      |
-| `embeddings`          | `Map<string, number[]>`    | Yes      | -                     | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
-| `themes`              | `Theme[]`                  | Yes      | -                     | Pre-generated themes. Can be empty array if not yet loaded.                                        |
-| `loading`             | `boolean`                  | No       | -                     | Loading state to show shimmer while data is being fetched                                          |
-| `openaiApiKey`        | `string`                   | No       | -                     | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
-| `apiEndpoint`         | `string`                   | No       | -                     | Custom endpoint used by helper utilities in server-side mode                                       |
-| `colorPalette`        | `string[]`                 | No       | Warm palette          | Array of hex color strings                                                                         |
-| `onHexClick`          | `(story, theme) => void`   | No       | -                     | Callback when a hex is clicked                                                                     |
-| `renderStory`         | `(story) => ReactNode`     | No       | Default renderer      | Custom story renderer for dialog                                                                   |
-| `onError`             | `(error) => void`          | No       | -                     | Error handler callback                                                                             |
-| `onThemesChange`      | `(themes) => void`         | No       | -                     | Callback when themes are updated                                                                   |
-| `onAssignmentsChange` | `(assignments) => void`    | No       | -                     | Callback when story-to-theme assignments change                                                    |
-| `className`           | `string`                   | No       | -                     | Additional CSS classes                                                                             |
-| `canvasWidth`         | `number \| string`         | No       | `100%`                | Optional canvas width. Numbers are treated as pixel values; strings can be any CSS length.         |
-| `canvasHeight`        | `number \| string`         | No       | `calc(100vh - 312px)` | Optional canvas height. Numbers are treated as pixel values; strings can be any CSS length.        |
-| `config`              | `Partial<PlacementConfig>` | No       | -                     | Canvas/hex configuration (used as internal defaults for placement math).                           |
-| `dialogConfig`        | `DialogConfig`             | No       | -                     | Dialog configuration options                                                                       |
+| Prop                   | Type                       | Required | Default                                  | Description                                                                                        |
+| ---------------------- | -------------------------- | -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `stories`              | `Story<T>[]`               | Yes      | -                                        | Array of stories to visualize                                                                      |
+| `embeddings`           | `Map<string, number[]>`    | Yes      | -                                        | Pre-generated embeddings (Map of storyId to embedding vector). Can be empty Map if not yet loaded. |
+| `themes`               | `Theme[]`                  | Yes      | -                                        | Pre-generated themes. Can be empty array if not yet loaded.                                        |
+| `loading`              | `boolean`                  | No       | -                                        | Loading state to show shimmer while data is being fetched                                          |
+| `openaiApiKey`         | `string`                   | No       | -                                        | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
+| `apiEndpoint`          | `string`                   | No       | -                                        | Custom endpoint used by helper utilities in server-side mode                                       |
+| `colorPalette`         | `string[]`                 | No       | Warm palette                             | Array of hex color strings                                                                         |
+| `onHexClick`           | `(story, theme) => void`   | No       | -                                        | Callback when a hex is clicked                                                                     |
+| `renderStory`          | `(story) => ReactNode`     | No       | Default renderer                         | Custom story renderer for dialog                                                                   |
+| `onError`              | `(error) => void`          | No       | -                                        | Error handler callback                                                                             |
+| `onThemesChange`       | `(themes) => void`         | No       | -                                        | Callback when themes are updated                                                                   |
+| `onAssignmentsChange`  | `(assignments) => void`    | No       | -                                        | Callback when story-to-theme assignments change                                                    |
+| `className`            | `string`                   | No       | -                                        | Additional CSS classes                                                                             |
+| `canvasWidth`          | `number \| string`         | No       | `100%`                                   | Optional canvas width. Numbers are treated as pixel values; strings can be any CSS length.         |
+| `canvasHeight`         | `number \| string`         | No       | `calc(100vh - 312px)`                    | Optional canvas height. Numbers are treated as pixel values; strings can be any CSS length.        |
+| `config`               | `Partial<PlacementConfig>` | No       | -                                        | Canvas/hex configuration (used as internal defaults for placement math).                           |
+| `dialogConfig`         | `DialogConfig`             | No       | -                                        | Dialog configuration options                                                                       |
+| `workerUrl`            | `string`                   | No       | `prop → env → "/workers/umap-worker.js"` | URL that resolves to the compiled UMAP worker asset.                                               |
+| `throwIfMissingWorker` | `boolean`                  | No       | `true`                                   | When `false`, the component surfaces worker issues via `error` state instead of throwing.          |
 
 #### Types
 
@@ -438,10 +469,15 @@ generator.assignStoriesToThemes(embeddings?: Map<string, number[]>, themes?: The
 
 ### `useUMAPPlacement` Hook
 
-If you prefer a hook for computing coordinates inside your own components, `useUMAPPlacement` remains available:
+If you prefer a hook for computing coordinates inside your own components, `useUMAPPlacement` remains available. It accepts the same `workerUrl` and `throwIfMissingWorker` options as the component and falls back to the environment variables / default URL when no prop is supplied:
 
 ```typescript
-const { computePlacement, loading, error } = useUMAPPlacement()
+import { useUMAPPlacement, DEFAULT_WORKER_URL } from '@hively/living-hive'
+
+const { computePlacement, loading, error } = useUMAPPlacement({
+  workerUrl: DEFAULT_WORKER_URL,
+  throwIfMissingWorker: false,
+})
 ```
 
 ## Interaction
@@ -537,6 +573,17 @@ export const handler: Handler = async event => {
 ```
 
 ## Development Scripts
+
+### Building the package
+
+```bash
+# Compile the worker asset and library bundles
+npm run build
+
+# Or run each step individually
+npm run build:worker
+npm run build:library
+```
 
 ### Quality and Testing
 

@@ -42,6 +42,8 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   dialogConfig,
   canvasWidth,
   canvasHeight,
+  workerUrl,
+  throwIfMissingWorker,
 }: LivingHiveProps<T>) {
   const resolvedCanvasWidth = canvasWidth ?? config?.canvasWidth
   const resolvedCanvasHeight = canvasHeight ?? config?.canvasHeight
@@ -82,7 +84,11 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   const initialPanRef = useRef({ x: 0, y: 0 })
   const autoFitAppliedRef = useRef<string>('') // Track which hex set we've auto-fitted
 
-  const { computePlacement, loading: placementLoading, error: placementError } = useUMAPPlacement()
+  const {
+    computePlacement,
+    loading: placementLoading,
+    error: placementError,
+  } = useUMAPPlacement({ workerUrl, throwIfMissingWorker })
 
   // Use external loading prop if provided, otherwise use placement loading
   const loading = externalLoading !== undefined ? externalLoading : placementLoading
@@ -658,6 +664,8 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 
   if (placementError) {
     console.error('Placement error:', placementError)
+    const workerRecoveryHint =
+      throwIfMissingWorker === false && /worker/i.test(placementError ?? '')
     return (
       <div
         className={cn('h-[calc(100vh-312px)] flex items-center justify-center', className)}
@@ -665,7 +673,13 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       >
         <div className="text-center">
           <p className="text-red-600 mb-2">Failed to compute positions</p>
-          <p className="text-sm text-muted-foreground">{placementError}</p>
+          {workerRecoveryHint ? (
+            <p className="text-sm text-muted-foreground">
+              {`The Living Hive worker could not be loaded. Pass the workerUrl prop or set the VITE_LIVING_HIVE_WORKER_URL (or NEXT_PUBLIC_LIVING_HIVE_WORKER_URL) environment variable.`}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{placementError}</p>
+          )}
         </div>
       </div>
     )

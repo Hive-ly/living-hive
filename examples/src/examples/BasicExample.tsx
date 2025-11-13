@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { toast } from 'sonner'
 import { LivingHive } from '@hively/living-hive'
+import umapWorkerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
 import type { BaseStory, Theme } from '@hively/living-hive'
 import mockEmbeddingsData from '../data/mockEmbeddings.json'
 import sampleStoriesData from '../data/sampleStories.json'
@@ -243,6 +244,7 @@ export function BasicExample() {
                 embeddings={embeddings}
                 themes={themes}
                 colorPalette={colorPalette}
+                workerUrl={umapWorkerUrl}
                 onAssignmentsChange={setStoryAssignments}
                 onError={error => {
                   console.error('Error in LivingHive:', error)

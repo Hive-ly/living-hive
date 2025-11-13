@@ -92,6 +92,8 @@ export interface LivingHiveProps<T extends BaseStory = BaseStory> {
   dialogConfig?: DialogConfig
   canvasWidth?: number | string
   canvasHeight?: number | string
+  workerUrl?: string
+  throwIfMissingWorker?: boolean
 }
 
 // UMAP normalization parameters

@@ -1,5 +1,6 @@
 // Web Worker for UMAP-based hex placement
 // Computes story positions dynamically from embeddings
+/// <reference lib="webworker" />
 
 import type {
   HexCoordinate,

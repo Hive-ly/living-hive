@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import type {
   HexCoordinate,
   UMAPNormalization,
@@ -14,7 +14,43 @@ const DEFAULT_CONFIG: PlacementConfig = {
   margin: 20,
 }
 
-interface UseUMAPPlacementReturn {
+export const DEFAULT_WORKER_URL = '/workers/umap-worker.js'
+
+export interface UseUMAPPlacementOptions {
+  workerUrl?: string
+  throwIfMissingWorker?: boolean
+}
+
+const resolveWorkerUrl = (candidate?: string): string | undefined => {
+  if (candidate) {
+    return candidate
+  }
+
+  try {
+    const importMetaEnv = (import.meta as unknown as { env?: Record<string, string | undefined> })
+      .env
+    if (importMetaEnv?.VITE_LIVING_HIVE_WORKER_URL) {
+      return importMetaEnv.VITE_LIVING_HIVE_WORKER_URL
+    }
+  } catch {
+    // Some environments do not expose import.meta; ignore safely.
+  }
+
+  if (typeof process !== 'undefined') {
+    const env = process.env as Record<string, string | undefined> | undefined
+    const value =
+      env?.LIVING_HIVE_WORKER_URL ??
+      env?.NEXT_PUBLIC_LIVING_HIVE_WORKER_URL ??
+      env?.VITE_LIVING_HIVE_WORKER_URL
+    if (value) {
+      return value
+    }
+  }
+
+  return DEFAULT_WORKER_URL
+}
+
+export interface UseUMAPPlacementReturn {
   computePlacement: (
     stories: StoryWithEmbedding[],
     norm: UMAPNormalization,
@@ -24,44 +60,92 @@ interface UseUMAPPlacementReturn {
   error: string | null
 }
 
-export function useUMAPPlacement(): UseUMAPPlacementReturn {
+export function useUMAPPlacement(options?: UseUMAPPlacementOptions): UseUMAPPlacementReturn {
+  const { workerUrl, throwIfMissingWorker = true } = options ?? {}
   const workerRef = useRef<Worker | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const resolvedWorkerUrl = useMemo(() => resolveWorkerUrl(workerUrl), [workerUrl])
 
   useEffect(() => {
-    try {
-      // Use Vite's worker import syntax for proper bundling
-      const workerUrl = new URL('../workers/umap-placement.worker.ts', import.meta.url)
-      const worker = new Worker(workerUrl, { type: 'module' })
-
-      worker.onerror = err => {
-        console.error('useUMAPPlacement: Worker error event:', err)
-        setError('Web worker failed to initialize')
-        setLoading(false)
-      }
-
-      worker.onmessageerror = err => {
-        console.error('useUMAPPlacement: Worker message error:', err)
-        setError('Web worker message error')
-        setLoading(false)
-      }
-
-      workerRef.current = worker
-    } catch (err) {
-      console.error('useUMAPPlacement: Failed to create worker:', err)
-      setError(
-        `Failed to initialize web worker: ${err instanceof Error ? err.message : String(err)}`,
-      )
+    if (workerRef.current) {
+      workerRef.current.terminate()
+      workerRef.current = null
     }
 
+    // Guard against SSR / non-worker environments
+    if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+      const message = 'Web workers are not supported in this environment.'
+      setError(message)
+      setLoading(false)
+      if (throwIfMissingWorker) {
+        console.error('useUMAPPlacement:', message)
+      } else {
+        console.warn('useUMAPPlacement:', message)
+      }
+      return
+    }
+
+    if (!resolvedWorkerUrl) {
+      const message =
+        'No worker URL provided. Pass workerUrl or set VITE_LIVING_HIVE_WORKER_URL in your build.'
+      setError(message)
+      setLoading(false)
+      if (throwIfMissingWorker) {
+        console.error('useUMAPPlacement:', message)
+      } else {
+        console.warn('useUMAPPlacement:', message)
+      }
+      return
+    }
+
+    let worker: Worker | null = null
+
+    try {
+      worker = new Worker(resolvedWorkerUrl, { type: 'module' })
+    } catch (err) {
+      const errorMessage = `Failed to initialize web worker: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+      console.error('useUMAPPlacement: Failed to create worker:', err)
+      setError(errorMessage)
+      setLoading(false)
+      return
+    }
+
+    if (!worker) {
+      return
+    }
+
+    const activeWorker = worker
+
+    const handleError = (err: ErrorEvent) => {
+      console.error('useUMAPPlacement: Worker error event:', err)
+      setError('Web worker message error')
+      setLoading(false)
+    }
+
+    const handleMessageError = (err: MessageEvent) => {
+      console.error('useUMAPPlacement: Worker message error:', err)
+      setError('Web worker message error')
+      setLoading(false)
+    }
+
+    activeWorker.addEventListener('error', handleError)
+    activeWorker.addEventListener('messageerror', handleMessageError)
+
+    workerRef.current = activeWorker
+    setError(null)
+
     return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate()
+      activeWorker.removeEventListener('error', handleError)
+      activeWorker.removeEventListener('messageerror', handleMessageError)
+      activeWorker.terminate()
+      if (workerRef.current === activeWorker) {
         workerRef.current = null
       }
     }
-  }, [])
+  }, [resolvedWorkerUrl, throwIfMissingWorker])
 
   const computePlacement = useCallback(
     async (
@@ -81,7 +165,13 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
       }
 
       if (!workerRef.current) {
-        throw new Error('Web worker not initialized')
+        const workerError = new Error('Web worker not initialized')
+        setLoading(false)
+        setError(workerError.message)
+        if (throwIfMissingWorker) {
+          throw workerError
+        }
+        return Promise.reject(workerError)
       }
 
       setLoading(true)
@@ -92,7 +182,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
           console.error('useUMAPPlacement: Computation timeout after 30s')
           reject(new Error('Placement computation timeout'))
           setLoading(false)
-        }, 30000)
+        }, 30_000)
 
         const handleMessage = (event: MessageEvent) => {
           clearTimeout(timeout)
@@ -124,7 +214,7 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
         })
       })
     },
-    [],
+    [throwIfMissingWorker],
   )
 
   return {

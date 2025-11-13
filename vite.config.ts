@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
 import dts from 'vite-plugin-dts'
+import { resolve } from 'node:path'
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
+  const isLibraryBuild = command === 'build' && mode === 'library'
   // Library build mode
-  if (mode === 'library') {
+  if (isLibraryBuild) {
     return {
       plugins: [
         react(),
@@ -22,6 +23,7 @@ export default defineConfig(({ mode }) => {
           formats: ['es', 'umd'],
           fileName: format => `living-hive-react.${format === 'es' ? 'js' : 'umd.cjs'}`,
         },
+        emptyOutDir: false,
         rollupOptions: {
           external: [
             'react',
@@ -33,6 +35,8 @@ export default defineConfig(({ mode }) => {
           ],
           output: {
             globals: {
+              clsx: 'clsx',
+              'tailwind-merge': 'tailwind-merge',
               react: 'React',
               'react-dom': 'ReactDOM',
             },
@@ -47,7 +51,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     root: resolve(__dirname, 'examples'),
     publicDir: resolve(__dirname, 'examples/public'),
-    envDir: resolve(__dirname), // Look for .env files in root directory
+    envDir: __dirname, // Look for .env files in root directory
     resolve: {
       alias: {
         '@hively/living-hive': resolve(__dirname, 'src'),
@@ -57,7 +61,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       open: true,
       fs: {
-        allow: [resolve(__dirname)],
+        allow: [__dirname],
       },
     },
     worker: {
