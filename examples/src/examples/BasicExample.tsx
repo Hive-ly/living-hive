@@ -59,14 +59,30 @@ function ThemeLegend({
     return colorPalette[themeIndex % colorPalette.length];
   };
 
+  // Get warm off-white and charcoal colors from parent scope
+  const warmOffWhite = "#F5F5F0";
+  const charcoalDark = "#1a1a1a";
+  const charcoalMedium = "#2d2d2d";
+
   return (
-    <div className="bg-gray-900/60 backdrop-blur-sm border border-gray-800/50 rounded-xl p-6 shadow-xl">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-display text-xl font-semibold text-white">
+    <div
+      className="backdrop-blur-sm rounded-xl p-6 shadow-xl flex flex-col"
+      style={{
+        backgroundColor: `${charcoalMedium}99`,
+        border: `1px solid ${warmOffWhite}20`,
+        height: "calc(100vh - 312px)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <h3
+          className="font-display text-xl font-semibold"
+          style={{color: warmOffWhite}}
+        >
           Story Themes
         </h3>
         <svg
-          className="w-5 h-5 text-gray-400"
+          className="w-5 h-5"
+          style={{color: warmOffWhite, opacity: 0.7}}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -79,14 +95,23 @@ function ThemeLegend({
           />
         </svg>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 overflow-y-auto flex-1 min-h-0">
         {sortedThemes.map((theme) => {
           const count = themeCounts.get(theme.id) || 0;
           const color = getThemeColor(theme.id);
           return (
             <div
               key={theme.id}
-              className="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800/70 transition-colors"
+              className="flex items-center justify-between rounded-lg p-3 transition-colors"
+              style={{
+                backgroundColor: `${charcoalDark}80`,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = `${charcoalDark}99`)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = `${charcoalDark}80`)
+              }
             >
               <div className="flex items-center gap-3 flex-1">
                 <div
@@ -94,34 +119,63 @@ function ThemeLegend({
                   style={{backgroundColor: color}}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-white text-sm">
+                  <div
+                    className="font-medium text-sm"
+                    style={{color: warmOffWhite}}
+                  >
                     {theme.label}
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
+                  <div
+                    className="text-xs mt-0.5"
+                    style={{color: warmOffWhite, opacity: 0.7}}
+                  >
                     {count} {count === 1 ? "story" : "stories"}
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-800/70 text-gray-200 text-xs font-semibold px-2.5 py-1 rounded-md">
+              <div
+                className="text-xs font-semibold px-2.5 py-1 rounded-md"
+                style={{
+                  backgroundColor: `${charcoalDark}99`,
+                  color: warmOffWhite,
+                }}
+              >
                 {count}
               </div>
             </div>
           );
         })}
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-800">
+      <div
+        className="mt-4 pt-4 flex-shrink-0"
+        style={{borderTop: `1px solid ${warmOffWhite}20`}}
+      >
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Total Stories:</span>
-          <span className="text-white font-medium">{stories.length}</span>
+          <span style={{color: warmOffWhite, opacity: 0.7}}>
+            Total Stories:
+          </span>
+          <span className="font-medium" style={{color: warmOffWhite}}>
+            {stories.length}
+          </span>
         </div>
         <div className="flex justify-between text-sm mt-2">
-          <span className="text-gray-400">Active Clusters:</span>
-          <span className="text-white font-medium">{themes.length}</span>
+          <span style={{color: warmOffWhite, opacity: 0.7}}>
+            Active Clusters:
+          </span>
+          <span className="font-medium" style={{color: warmOffWhite}}>
+            {themes.length}
+          </span>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-800">
-        <p className="text-xs text-gray-400 leading-relaxed">
-          <strong className="text-gray-300">How it works:</strong> Stories are
+      <div
+        className="mt-4 pt-4 flex-shrink-0"
+        style={{borderTop: `1px solid ${warmOffWhite}20`}}
+      >
+        <p
+          className="text-xs leading-relaxed"
+          style={{color: warmOffWhite, opacity: 0.7}}
+        >
+          <strong style={{opacity: 0.9}}>How it works:</strong> Stories are
           grouped by similar themes and workplace issues.
         </p>
       </div>
@@ -220,16 +274,38 @@ export function BasicExample() {
       ? (sampleStoriesData as BaseStory[])
       : fallbackStories;
 
+  // Color palette from image
+  const colorPalette = [
+    "#4F81B0", // Muted Blue
+    "#AEBEC5", // Pale Blue-Grey
+    "#DAA5AD", // Dusty Rose Pink
+    "#FF6E7F", // Coral Pink
+    "#CDB15E", // Muted Gold/Mustard
+  ];
+
+  // Dark charcoal backgrounds
+  const charcoalDark = "#1a1a1a";
+  const charcoalMedium = "#2d2d2d";
+
+  // Warm off-white foreground
+  const warmOffWhite = "#F5F5F0";
+
   // If using mock embeddings, API key is not required
   if (!useMockEmbeddings && !apiKey) {
     return (
-      <div className="space-y-4">
+      <div
+        className="min-h-screen space-y-4 p-6"
+        style={{
+          background: `linear-gradient(to bottom right, ${charcoalDark}, ${charcoalMedium}, ${charcoalDark})`,
+          color: warmOffWhite,
+        }}
+      >
         <h2 className="text-2xl font-bold mb-4">Basic Example</h2>
-        <p className="text-gray-600 mb-4">
+        <p className="mb-4" style={{opacity: 0.9}}>
           Please set VITE_OPENAI_API_KEY in your .env.local file to see the
           visualization.
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm" style={{opacity: 0.7}}>
           Create a .env.local file in the root directory with:
           VITE_OPENAI_API_KEY=sk-your-key-here
         </p>
@@ -240,53 +316,78 @@ export function BasicExample() {
   // Wait for mock embeddings to load
   if (useMockEmbeddings && !mockEmbeddings) {
     return (
-      <div className="space-y-4">
+      <div
+        className="min-h-screen space-y-4 p-6"
+        style={{
+          background: `linear-gradient(to bottom right, ${charcoalDark}, ${charcoalMedium}, ${charcoalDark})`,
+          color: warmOffWhite,
+        }}
+      >
         <h2 className="text-2xl font-bold mb-4">Basic Example</h2>
-        <p className="text-gray-600 mb-4">Loading mock embeddings...</p>
+        <p className="mb-4" style={{opacity: 0.9}}>
+          Loading mock embeddings...
+        </p>
       </div>
     );
   }
 
-  // Dark mode color palette
-  const darkColorPalette = [
-    "#8B5CF6", // Purple
-    "#F97316", // Orange
-    "#3B82F6", // Blue
-    "#F59E0B", // Amber
-    "#A855F7", // Light Purple
-    "#EF4444", // Red
-    "#10B981", // Green
-    "#EC4899", // Pink
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white">
+    <div
+      className="min-h-screen"
+      style={{
+        color: warmOffWhite,
+      }}
+    >
       {/* Hero Section */}
-      <div className="border-b border-gray-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+      <div style={{borderBottom: `1px solid rgba(255, 255, 255, 0.1)`}}>
+        <div className="max-w-7xl mx-auto px-6 py-4 md:py-6">
           <div className="max-w-3xl">
-            <h1 className="font-display text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+            <h1
+              className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight"
+              style={{color: colorPalette[0]}}
+            >
               Living Hive
             </h1>
-            <p className="text-xl text-gray-300 leading-relaxed mb-6">
+            <p
+              className="text-base leading-relaxed mb-4"
+              style={{color: warmOffWhite, opacity: 0.9}}
+            >
               Explore workplace stories from{" "}
               <a
                 href="https://www.reddit.com/r/work"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                className="font-medium transition-colors"
+                style={{color: colorPalette[0], opacity: 0.9}}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.9")}
               >
                 r/work
               </a>{" "}
               visualized as an interactive hive. Each hexagon represents a
               story, grouped by similar themes and workplace issues.
             </p>
-            <div className="flex flex-wrap gap-3 text-sm text-gray-400">
-              <span className="px-3 py-1.5 bg-gray-800/50 rounded-full border border-gray-800">
+            <div
+              className="flex flex-wrap gap-3 text-sm"
+              style={{color: warmOffWhite, opacity: 0.7}}
+            >
+              <span
+                className="px-3 py-1.5 rounded-full border"
+                style={{
+                  backgroundColor: `${charcoalMedium}80`,
+                  borderColor: `${warmOffWhite}20`,
+                }}
+              >
                 {sampleStories.length} stories
               </span>
               {useMockEmbeddings && (
-                <span className="px-3 py-1.5 bg-gray-800/50 rounded-full border border-gray-800">
+                <span
+                  className="px-3 py-1.5 rounded-full border"
+                  style={{
+                    backgroundColor: `${charcoalMedium}80`,
+                    borderColor: `${warmOffWhite}20`,
+                  }}
+                >
                   Pre-computed embeddings
                 </span>
               )}
@@ -299,7 +400,10 @@ export function BasicExample() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-gray-900/40 backdrop-blur-sm rounded-xl p-6 shadow-2xl">
+            <div
+              className="backdrop-blur-sm rounded-xl shadow-2xl"
+              style={{backgroundColor: `${charcoalMedium}80`}}
+            >
               <LivingHive
                 stories={sampleStories}
                 openaiApiKey={useMockEmbeddings ? "" : apiKey || ""}
@@ -307,7 +411,7 @@ export function BasicExample() {
                 themes={
                   useMockEmbeddings && mockThemes ? mockThemes : undefined
                 }
-                colorPalette={darkColorPalette}
+                colorPalette={colorPalette}
                 onThemesChange={handleThemesChange}
                 onAssignmentsChange={handleAssignmentsChange}
                 onError={(error) => {
@@ -333,7 +437,7 @@ export function BasicExample() {
                 themes={themes}
                 storyAssignments={storyAssignments}
                 stories={sampleStories}
-                colorPalette={darkColorPalette}
+                colorPalette={colorPalette}
               />
             )}
           </div>

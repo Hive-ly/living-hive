@@ -54,9 +54,11 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({x: 0, y: 0});
   const initialPanRef = useRef({x: 0, y: 0});
+  const autoFitAppliedRef = useRef<string>(""); // Track which hex set we've auto-fitted
 
   const {generateEmbeddingsForStories, loading: embeddingsLoading} =
     useEmbeddings<T>(onError);
@@ -295,6 +297,7 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   useEffect(() => {
     if (stories.length === 0 || themes.length === 0) {
       setHexes([]);
+      autoFitAppliedRef.current = ""; // Reset auto-fit when clearing hexes
       return;
     }
 
@@ -374,43 +377,8 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 
         console.log("Generated hexes:", newHexes.length);
         setHexes(newHexes);
-
-        // Auto-fit: Calculate bounds and center the hexes
-        if (newHexes.length > 0) {
-          const hexRadius = config?.hexRadius || getHexRadius();
-          let minX = Infinity,
-            maxX = -Infinity,
-            minY = Infinity,
-            maxY = -Infinity;
-
-          newHexes.forEach((hex) => {
-            const pixel = hexToPixel(hex, hexRadius);
-            minX = Math.min(minX, pixel.x);
-            maxX = Math.max(maxX, pixel.x);
-            minY = Math.min(minY, pixel.y);
-            maxY = Math.max(maxY, pixel.y);
-          });
-
-          const hexWidth = maxX - minX;
-          const hexHeight = maxY - minY;
-          const centerHexX = (minX + maxX) / 2;
-          const centerHexY = (minY + maxY) / 2;
-
-          // Calculate zoom to fit with padding
-          const padding = 40;
-          const scaleX = (canvasWidth - padding * 2) / Math.max(hexWidth, 1);
-          const scaleY = (canvasHeight - padding * 2) / Math.max(hexHeight, 1);
-          const initialZoom = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 1x initially
-
-          // Center the hexes
-          const initialPanX = canvasWidth / 2 - centerHexX * initialZoom;
-          const initialPanY = canvasHeight / 2 - centerHexY * initialZoom;
-
-          setZoom(initialZoom);
-          setPanX(initialPanX);
-          setPanY(initialPanY);
-          initialPanRef.current = {x: initialPanX, y: initialPanY};
-        }
+        // Reset auto-fit flag so it runs for the new hex set
+        autoFitAppliedRef.current = "";
       } catch (error) {
         if (onError) {
           onError(error instanceof Error ? error : new Error(String(error)));
@@ -522,6 +490,98 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     ctx.restore();
   }, [hexes, selectedHex, focusedHexIndex, config, zoom, panX, panY]);
 
+  // Auto-fit: Calculate bounds and center the hexes after they're rendered
+  useEffect(() => {
+    if (!hexes.length || !canvasRef.current) {
+      return;
+    }
+
+    // Create a unique identifier for this hex set including fullscreen state
+    const hexSetId =
+      hexes
+        .map((h) => `${h.q},${h.r}`)
+        .sort()
+        .join("|") + `|fullscreen:${isFullscreen}`;
+
+    // Skip if we've already auto-fitted this hex set in this state
+    if (autoFitAppliedRef.current === hexSetId) {
+      return;
+    }
+
+    // Use double requestAnimationFrame to ensure canvas is rendered with final dimensions
+    // First frame: wait for React to update DOM
+    let frameId2: number | null = null;
+    const frameId1 = requestAnimationFrame(() => {
+      // Second frame: ensure canvas has final dimensions
+      frameId2 = requestAnimationFrame(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+          // Canvas not ready yet, reset flag to retry on next render
+          autoFitAppliedRef.current = "";
+          return;
+        }
+
+        const canvasWidth = rect.width;
+        const canvasHeight = rect.height;
+        const hexRadius = config?.hexRadius || getHexRadius();
+
+        // Calculate bounds of all hexes
+        let minX = Infinity,
+          maxX = -Infinity,
+          minY = Infinity,
+          maxY = -Infinity;
+
+        hexes.forEach((hex) => {
+          const pixel = hexToPixel(hex, hexRadius);
+          minX = Math.min(minX, pixel.x);
+          maxX = Math.max(maxX, pixel.x);
+          minY = Math.min(minY, pixel.y);
+          maxY = Math.max(maxY, pixel.y);
+        });
+
+        const hexWidth = maxX - minX;
+        const hexHeight = maxY - minY;
+        const centerHexX = (minX + maxX) / 2;
+        const centerHexY = (minY + maxY) / 2;
+
+        // Calculate zoom to fit with minimal padding
+        const padding = 20;
+        const scaleX = (canvasWidth - padding * 2) / Math.max(hexWidth, 1);
+        const scaleY = (canvasHeight - padding * 2) / Math.max(hexHeight, 1);
+        const initialZoom = Math.min(scaleX, scaleY, 2); // Allow zooming in up to 2x to fill canvas
+
+        // Center the hexes
+        const initialPanX = canvasWidth / 2 - centerHexX * initialZoom;
+        const initialPanY = canvasHeight / 2 - centerHexY * initialZoom;
+
+        setZoom(initialZoom);
+        setPanX(initialPanX);
+        setPanY(initialPanY);
+        initialPanRef.current = {x: initialPanX, y: initialPanY};
+
+        // Mark this hex set as auto-fitted
+        autoFitAppliedRef.current = hexSetId;
+
+        console.log("Auto-fit applied:", {
+          zoom: initialZoom,
+          pan: {x: initialPanX, y: initialPanY},
+          canvas: {width: canvasWidth, height: canvasHeight},
+          hexBounds: {minX, maxX, minY, maxY},
+        });
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId1);
+      if (frameId2 !== null) {
+        cancelAnimationFrame(frameId2);
+      }
+    };
+  }, [hexes, config, isFullscreen]);
+
   // Handle window resize - trigger re-render with zoom/pan
   useEffect(() => {
     const handleResize = () => {
@@ -536,6 +596,21 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [hexes.length]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const newFullscreenState = !!document.fullscreenElement;
+      setIsFullscreen(newFullscreenState);
+      // Reset auto-fit flag so it recalculates for the new canvas size
+      autoFitAppliedRef.current = "";
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   const drawHex = (
     ctx: CanvasRenderingContext2D,
@@ -782,7 +857,10 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     console.error("Placement error:", placementError);
     return (
       <div
-        className={cn("h-96 flex items-center justify-center", className)}
+        className={cn(
+          "h-[calc(100vh-312px)] flex items-center justify-center",
+          className
+        )}
         role="alert"
       >
         <div className="text-center">
@@ -802,7 +880,12 @@ export function LivingHive<T extends BaseStory = BaseStory>({
 
   if (!themes.length || !hexes.length) {
     return (
-      <div className={cn("h-96 flex items-center justify-center", className)}>
+      <div
+        className={cn(
+          "h-[calc(100vh-312px)] flex items-center justify-center",
+          className
+        )}
+      >
         <div className="text-center">
           <p className="text-muted-foreground mb-2">
             {!themes.length ? "No themes available" : "No hexes to display"}
@@ -817,6 +900,24 @@ export function LivingHive<T extends BaseStory = BaseStory>({
     );
   }
 
+  // Full-screen handlers
+  const handleFullscreen = async () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await container.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error("Error toggling fullscreen:", error);
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -826,19 +927,75 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       role="application"
       aria-label="Living Hive visualization"
     >
-      <canvas
-        ref={canvasRef}
-        className="w-full h-96 border-2 border-gray-600 rounded-lg cursor-move focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-gray-900"
-        onClick={handleCanvasClick}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{touchAction: "none"}}
-        aria-label="Interactive hex grid visualization (scroll to zoom, drag to pan)"
-        tabIndex={-1}
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          className={cn(
+            "w-full border rounded-xl cursor-move focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-gray-900",
+            isFullscreen ? "h-screen" : "h-[calc(100vh-312px)]"
+          )}
+          style={{
+            touchAction: "none",
+            borderColor: "rgba(245, 245, 240, 0.2)",
+          }}
+          onClick={handleCanvasClick}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          aria-label="Interactive hex grid visualization (scroll to zoom, drag to pan)"
+          tabIndex={-1}
+        />
+        {/* Full-screen button */}
+        <button
+          onClick={handleFullscreen}
+          className="absolute top-2 right-2 z-10 p-2 rounded-lg backdrop-blur-sm transition-colors"
+          style={{
+            backgroundColor: "rgba(58, 58, 58, 0.8)",
+            color: "#F5F5F0",
+            border: "1px solid rgba(245, 245, 240, 0.2)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(58, 58, 58, 0.95)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(58, 58, 58, 0.8)";
+          }}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {isFullscreen ? (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
 
       {/* Dialog for selected hex - fixed on right side */}
       {selectedHex && (
@@ -848,26 +1005,24 @@ export function LivingHive<T extends BaseStory = BaseStory>({
             className={cn(
               // Override default centered positioning
               "!left-auto !right-0 !translate-x-0 !bottom-auto",
-              // Base positioning - fixed on right side of viewport
-              "fixed right-0 top-0 bottom-0 z-50",
+              // Base positioning - fixed on right side of viewport, full height
+              "fixed right-0 top-0 bottom-0 h-screen z-50",
               // Default width and styling
-              dialogConfig?.width || "w-96 max-w-[90vw]",
-              dialogConfig?.maxHeight || "max-h-screen",
+              dialogConfig?.width || "w-[32rem] max-w-[90vw]",
               // Position variants
               dialogConfig?.position === "left" && "!left-0 !right-auto",
               dialogConfig?.position === "top" &&
                 "!top-0 !bottom-auto !right-0 !left-auto h-auto",
               dialogConfig?.position === "bottom" &&
                 "!bottom-0 !top-auto !right-0 !left-auto h-auto",
-              // Dark mode styling
-              "bg-gray-900/95 backdrop-blur-md text-white",
-              "border-l border-gray-800/50 border-r-0 border-t-0 border-b-0",
-              dialogConfig?.position === "left" &&
-                "border-l-0 border-r border-gray-800/50",
+              // Charcoal theme styling - slightly lighter than background
+              "backdrop-blur-md",
+              "border-l border-r-0 border-t-0 border-b-0",
+              dialogConfig?.position === "left" && "border-l-0 border-r",
               dialogConfig?.position === "top" &&
-                "border-l-0 border-r-0 border-t border-gray-800/50 border-b-0",
+                "border-l-0 border-r-0 border-t border-b-0",
               dialogConfig?.position === "bottom" &&
-                "border-l-0 border-r-0 border-t-0 border-b border-gray-800/50",
+                "border-l-0 border-r-0 border-t-0 border-b",
               "rounded-none shadow-2xl",
               dialogConfig?.position === "top" && "rounded-b-xl",
               dialogConfig?.position === "bottom" && "rounded-t-xl",
@@ -882,9 +1037,15 @@ export function LivingHive<T extends BaseStory = BaseStory>({
                 "data-[state=closed]:slide-out-to-top-full data-[state=open]:slide-in-from-top-full",
               dialogConfig?.position === "bottom" &&
                 "data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full",
-              "overflow-y-auto p-6",
+              "overflow-y-auto p-6 flex flex-col items-start",
               dialogConfig?.className
             )}
+            style={{
+              backgroundColor: "#3a3a3a", // Slightly lighter charcoal than background (#2d2d2d)
+              color: "#F5F5F0", // Warm off-white
+              borderColor: "rgba(245, 245, 240, 0.2)", // Subtle warm off-white border
+              height: "100vh", // Always full height
+            }}
             onOpenAutoFocus={(e) => e.preventDefault()}
             onInteractOutside={(e) => {
               // Prevent closing when clicking on canvas
@@ -894,31 +1055,38 @@ export function LivingHive<T extends BaseStory = BaseStory>({
               }
             }}
           >
-            <DialogHeader>
+            <DialogHeader className="flex-shrink-0">
               {selectedHex.theme && (
                 <div className="flex items-center gap-2 mb-2">
                   <div
-                    className="w-4 h-4 rounded-full border border-gray-700 flex-shrink-0"
+                    className="w-4 h-4 rounded-full border flex-shrink-0"
                     style={{
                       backgroundColor: getThemeColor(
                         selectedHex.theme.id,
                         themes,
                         colorPalette
                       ),
+                      borderColor: "rgba(245, 245, 240, 0.3)",
                     }}
                     aria-label={`Theme: ${selectedHex.theme.label}`}
                   />
-                  <DialogTitle className="text-xl font-semibold text-white">
+                  <DialogTitle
+                    className="text-xl font-semibold"
+                    style={{color: "#F5F5F0"}}
+                  >
                     {selectedHex.theme.label}
                   </DialogTitle>
                 </div>
               )}
             </DialogHeader>
-            <div className="text-base text-gray-100 leading-relaxed pt-2">
+            <div
+              className="text-base leading-relaxed pt-2 flex-shrink-0"
+              style={{color: "#F5F5F0", opacity: 0.95}}
+            >
               {renderStory ? (
                 renderStory(selectedHex.story)
               ) : (
-                <p className="whitespace-pre-wrap text-gray-100">
+                <p className="whitespace-pre-wrap">
                   "{selectedHex.story.text}"
                 </p>
               )}
@@ -928,12 +1096,19 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm border border-border rounded-lg px-3 py-2 text-sm z-10">
+      <div
+        className="absolute bottom-4 right-4 backdrop-blur-sm rounded-lg px-3 py-2 text-sm z-10"
+        style={{
+          backgroundColor: "rgba(58, 58, 58, 0.8)",
+          border: "1px solid rgba(245, 245, 240, 0.2)",
+          color: "#F5F5F0",
+        }}
+      >
         <div className="flex items-center gap-4">
-          <span className="text-muted-foreground">
+          <span style={{opacity: 0.9}}>
             {stories.length} {stories.length === 1 ? "story" : "stories"}
           </span>
-          <span className="text-muted-foreground">
+          <span style={{opacity: 0.9}}>
             {themes.length} {themes.length === 1 ? "theme" : "themes"}
           </span>
         </div>
