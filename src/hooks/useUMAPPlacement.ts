@@ -111,10 +111,10 @@ export function useUMAPPlacement(): UseUMAPPlacementReturn {
           }
         }
 
-        workerRef.current.addEventListener('message', handleMessage)
+        workerRef.current?.addEventListener('message', handleMessage)
 
         const fullConfig = { ...DEFAULT_CONFIG, ...config }
-        workerRef.current.postMessage({
+        workerRef.current?.postMessage({
           type: 'computePlacement',
           stories,
           norm,
