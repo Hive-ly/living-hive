@@ -102,25 +102,80 @@ export function App() {
 
 ### Configuring the UMAP worker asset
 
-The UMAP algorithm now runs in a standalone worker that ships with the package at `dist/workers/umap-worker.js`. Living Hive resolves the worker URL using three fallbacks (first match wins):
+The UMAP algorithm runs in a standalone worker that ships with the package at `dist/workers/umap-worker.js`. 
 
-1. The `workerUrl` prop passed to `LivingHive` or `useUMAPPlacement`
-2. The `VITE_LIVING_HIVE_WORKER_URL`, `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL`, or `LIVING_HIVE_WORKER_URL` environment variables exposed by your bundler
-3. The built-in `DEFAULT_WORKER_URL` (`/workers/umap-worker.js`)
+**Recommended approach (works with any bundler):**
 
-Make sure the worker file is hosted at whichever path you return. Common setups:
+Pass the worker URL explicitly using your bundler's worker import syntax:
 
-- **Vite / Create React App** – copy `dist/workers/umap-worker.js` into `public/workers/` and either rely on the default URL or set `VITE_LIVING_HIVE_WORKER_URL=/workers/umap-worker.js`
-- **Next.js** – place the worker in `public/umap-worker.js` and set `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL=/umap-worker.js`, or pass `<LivingHive workerUrl="/umap-worker.js" />`
-- **CDN** – upload the worker to your CDN and point to it directly: `<LivingHive workerUrl="https://cdn.yoursite.com/workers/umap-worker.js" />`
+**Vite:**
+```tsx
+import { LivingHive } from '@hively/living-hive'
+import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
 
-When working inside this repository’s `examples/` app, the example imports the worker via Vite’s `?worker&url` syntax so the dev server can serve it without extra copying:
+<LivingHive 
+  stories={stories} 
+  embeddings={embeddings} 
+  themes={themes}
+  workerUrl={workerUrl}
+/>
+```
+
+**Webpack 5+ (native worker support):**
+```tsx
+import { LivingHive } from '@hively/living-hive'
+import Worker from '@hively/living-hive/workers/umap-placement.worker?worker'
+
+// Create worker URL using the Worker constructor
+const workerUrl = new URL(Worker, import.meta.url).href
+
+<LivingHive 
+  stories={stories} 
+  embeddings={embeddings} 
+  themes={themes}
+  workerUrl={workerUrl}
+/>
+```
+
+**Webpack 4 or older (with worker-loader):**
+```tsx
+import { LivingHive } from '@hively/living-hive'
+// Configure worker-loader in your webpack config
+
+<LivingHive 
+  stories={stories} 
+  embeddings={embeddings} 
+  themes={themes}
+  workerUrl={require('@hively/living-hive/workers/umap-worker.js')}
+/>
+```
+
+**Manual setup (copy worker to public directory):**
+
+If your bundler doesn't support worker imports, you can manually copy the worker file:
+
+1. Copy `node_modules/@hively/living-hive/dist/workers/umap-worker.js` to your `public/workers/` directory
+2. Pass the URL:
 
 ```tsx
-import umapWorkerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
-
-<LivingHive workerUrl={umapWorkerUrl} ... />
+<LivingHive 
+  stories={stories} 
+  embeddings={embeddings} 
+  themes={themes}
+  workerUrl="/workers/umap-worker.js"
+/>
 ```
+
+**Automatic resolution (fallback):**
+
+If you don't provide `workerUrl`, the library will attempt to auto-resolve it using `import.meta.url`. This may work with some modern bundlers, but results vary. **It's recommended to pass `workerUrl` explicitly** for reliable behavior across all bundlers.
+
+**Environment variables (alternative):**
+
+You can also set the worker URL via environment variables that your bundler exposes:
+- `VITE_LIVING_HIVE_WORKER_URL` (Vite)
+- `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL` (Next.js)
+- `LIVING_HIVE_WORKER_URL` (generic)
 
 ### With Custom Themes
 

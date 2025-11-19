@@ -92,7 +92,16 @@ export interface LivingHiveProps<T extends BaseStory = BaseStory> {
   dialogConfig?: DialogConfig
   canvasWidth?: number | string
   canvasHeight?: number | string
-  workerUrl?: string
+  /**
+   * URL to the UMAP worker script. 
+   * 
+   * **Recommended:** Use your bundler's worker import syntax:
+   * - Vite: `import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'`
+   * - Webpack 5+: Use worker-loader or Webpack 5's native worker support
+   * 
+   * If not provided, the library will attempt to auto-resolve the worker URL.
+   */
+  workerUrl?: string | URL
   throwIfMissingWorker?: boolean
 }
 

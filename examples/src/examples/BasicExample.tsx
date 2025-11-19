@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react'
 import { toast } from 'sonner'
 import { LivingHive, DEFAULT_COLOR_PALETTE } from '@hively/living-hive'
+// In dev mode with source code, we need to use Vite's ?worker&url syntax
+// When consuming from npm, the library will auto-resolve the worker
 import umapWorkerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
 import type { BaseStory, Theme } from '@hively/living-hive'
 import mockEmbeddingsData from '../data/mockEmbeddings.json'
@@ -234,6 +236,8 @@ export function BasicExample() {
                 stories={sampleStories}
                 embeddings={embeddings}
                 themes={themes}
+                // In dev mode with source code, we need to explicitly pass the worker URL
+                // When consuming from npm, this can be omitted and the library will auto-resolve
                 workerUrl={umapWorkerUrl}
                 onAssignmentsChange={setStoryAssignments}
                 onError={error => {

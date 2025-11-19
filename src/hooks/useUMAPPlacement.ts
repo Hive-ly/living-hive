@@ -14,16 +14,50 @@ const DEFAULT_CONFIG: PlacementConfig = {
   margin: 20,
 }
 
-export const DEFAULT_WORKER_URL = '/workers/umap-worker.js'
+/**
+ * Default worker URL fallback. 
+ * 
+ * Note: It's recommended to explicitly pass workerUrl using your bundler's worker import syntax.
+ * This fallback attempts to resolve the worker using import.meta.url, but results may vary
+ * depending on how the consumer's bundler processes the library.
+ */
+function getDefaultWorkerUrl(): string {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.url) {
+      // Attempt to resolve worker relative to this module
+      // The consumer's bundler should transform import.meta.url appropriately
+      const url = new URL('./workers/umap-worker.js', import.meta.url)
+      return url.href
+    }
+  } catch {
+    // Fallback if import.meta is not available or URL construction fails
+  }
+  
+  // Final fallback - assumes worker is at /workers/umap-worker.js
+  return '/workers/umap-worker.js'
+}
+
+export const DEFAULT_WORKER_URL = getDefaultWorkerUrl()
 
 export interface UseUMAPPlacementOptions {
-  workerUrl?: string
+  /**
+   * URL to the UMAP worker script. 
+   * 
+   * **Recommended:** Use your bundler's worker import syntax to get the URL:
+   * - Vite: `import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'`
+   * - Webpack 5+: `new URL('@hively/living-hive/workers/umap-placement.worker?worker', import.meta.url)`
+   * 
+   * If not provided, the library will attempt to auto-resolve the worker URL,
+   * but this may not work reliably across all bundlers.
+   */
+  workerUrl?: string | URL
   throwIfMissingWorker?: boolean
 }
 
-const resolveWorkerUrl = (candidate?: string): string | undefined => {
+const resolveWorkerUrl = (candidate?: string | URL): string | undefined => {
   if (candidate) {
-    return candidate
+    // Handle both string and URL objects
+    return typeof candidate === 'string' ? candidate : candidate.toString()
   }
 
   try {
@@ -102,7 +136,12 @@ export function useUMAPPlacement(options?: UseUMAPPlacementOptions): UseUMAPPlac
     let worker: Worker | null = null
 
     try {
-      worker = new Worker(resolvedWorkerUrl, { type: 'module' })
+      // resolvedWorkerUrl is already a string from resolveWorkerUrl
+      // Convert to string explicitly in case it's somehow a URL object
+      const workerUrlString = typeof resolvedWorkerUrl === 'string' 
+        ? resolvedWorkerUrl 
+        : String(resolvedWorkerUrl)
+      worker = new Worker(workerUrlString, { type: 'module' })
     } catch (err) {
       const errorMessage = `Failed to initialize web worker: ${
         err instanceof Error ? err.message : String(err)

@@ -11,7 +11,8 @@
       "import": "./dist/living-hive-react.js",
       "require": "./dist/living-hive-react.umd.cjs",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./workers/*": "./dist/workers/*"
   },
   "files": [
     "dist"

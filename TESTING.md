@@ -49,7 +49,7 @@ To test that the library builds correctly:
 ### 1. Build the Library
 
 ```bash
-npm run build
+npm run build:library
 ```
 
 This will:
@@ -71,7 +71,7 @@ npm run type-check
 1. Build the library:
 
    ```bash
-   npm run build
+   npm run build:library
    ```
 
 2. Link it (from the library root):
