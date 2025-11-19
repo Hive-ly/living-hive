@@ -8,3 +8,5 @@ export {
 } from './hooks/useUMAPPlacement'
 export { StoryDataGenerator, assignStoriesToThemes } from './data/StoryDataGenerator'
 export { DEFAULT_COLOR_PALETTE } from './utils/colors'
+export { Popover, PopoverTrigger, PopoverContent } from './components/ui/popover'
+export type { PopoverContentProps } from './components/ui/popover'

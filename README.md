@@ -325,9 +325,76 @@ Available variables include:
 | `--living-hive-focus-ring` / `--living-hive-focus-ring-offset`                                                                    | Focus ring colors for keyboard users          |
 | `--living-hive-toggle-bg` / `--living-hive-toggle-bg-hover` / `--living-hive-toggle-color` / `--living-hive-toggle-border`        | Fullscreen toggle palette                     |
 | `--living-hive-dialog-background` / `--living-hive-dialog-color` / `--living-hive-dialog-border` / `--living-hive-dialog-radius`  | Story dialog surface styling                  |
+| `--living-hive-popover-background` / `--living-hive-popover-color` / `--living-hive-popover-border` / `--living-hive-popover-radius` / `--living-hive-popover-shadow` | Popover component styling                     |
 | `--living-hive-legend-background` / `--living-hive-legend-border` / `--living-hive-legend-color` / `--living-hive-legend-opacity` | Legend chip visuals                           |
 
 You can also supply explicit dimensions via the new `canvasWidth` and `canvasHeight` props. Numbers are treated as pixel values (e.g. `canvasHeight={480}`), while strings accept any CSS length (e.g. `canvasHeight="70vh"`). When these props are omitted, the component falls back to the CSS custom properties so host applications can manage sizing through styles alone.
+
+### Using the Popover Component
+
+The library exports a customizable `Popover` component built on Radix UI. It uses living-hive theme variables by default, but can be customized via props or CSS variables.
+
+**Basic Usage:**
+
+```tsx
+import { Popover, PopoverTrigger, PopoverContent } from '@hively/living-hive'
+
+function MyComponent() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button>Open Popover</button>
+      </PopoverTrigger>
+      <PopoverContent>
+        <p>Popover content here</p>
+      </PopoverContent>
+    </Popover>
+  )
+}
+```
+
+**Customization Options:**
+
+The `PopoverContent` component accepts several customization props:
+
+```tsx
+<PopoverContent
+  // Use living-hive theme (default: true)
+  useLivingHiveTheme={true}
+  // Custom className for additional styling
+  className="w-96"
+  // Standard Radix UI props
+  align="start"
+  sideOffset={8}
+  side="top"
+>
+  <p>Custom styled popover</p>
+</PopoverContent>
+```
+
+**Customizing with CSS Variables:**
+
+Override the popover styling using CSS variables:
+
+```css
+.my-custom-popover {
+  --living-hive-popover-background: #ffffff;
+  --living-hive-popover-color: #1a1a1a;
+  --living-hive-popover-border: rgba(0, 0, 0, 0.1);
+  --living-hive-popover-radius: 0.75rem;
+  --living-hive-popover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+```
+
+**Using Tailwind Classes Instead:**
+
+If you prefer to use Tailwind's `bg-popover` and `text-popover-foreground` classes (requires Tailwind config setup), set `useLivingHiveTheme={false}`:
+
+```tsx
+<PopoverContent useLivingHiveTheme={false} className="bg-popover text-popover-foreground">
+  <p>Uses Tailwind popover classes</p>
+</PopoverContent>
+```
 
 ## Generating Embeddings and Themes
 
