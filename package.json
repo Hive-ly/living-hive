@@ -12,6 +12,16 @@
       "require": "./dist/living-hive-react.umd.cjs",
       "types": "./dist/index.d.ts"
     },
+    "./workers/umap-placement.worker": {
+      "import": "./dist/workers/umap-worker.js",
+      "types": "./dist/workers/umap-placement.worker.d.ts"
+    },
+    "./workers/umap-worker": {
+      "import": "./dist/workers/umap-worker.js"
+    },
+    "./workers/umap-worker.js": {
+      "import": "./dist/workers/umap-worker.js"
+    },
     "./workers/*": "./dist/workers/*"
   },
   "files": [

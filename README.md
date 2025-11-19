@@ -111,7 +111,11 @@ Pass the worker URL explicitly using your bundler's worker import syntax:
 **Vite:**
 ```tsx
 import { LivingHive } from '@hively/living-hive'
+// Option 1: Use the source worker path (recommended for Vite)
 import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'
+
+// Option 2: Use the built worker file directly
+// import workerUrl from '@hively/living-hive/workers/umap-worker.js?worker&url'
 
 <LivingHive 
   stories={stories} 
@@ -120,6 +124,8 @@ import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&
   workerUrl={workerUrl}
 />
 ```
+
+**Note:** The library's package.json exports support both `umap-placement.worker` and `umap-worker.js` paths. Vite's `?worker&url` query string will work with either.
 
 **Webpack 5+ (native worker support):**
 ```tsx
