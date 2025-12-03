@@ -1,6 +1,6 @@
 {
   "name": "@hively/living-hive",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A React library for visualizing interconnected stories using UMAP and hex grid layouts",
   "type": "module",
   "main": "./dist/living-hive-react.umd.cjs",
