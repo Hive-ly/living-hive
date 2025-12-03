@@ -17,6 +17,7 @@ This release includes significant breaking changes to simplify the API and give 
 #### Why This Change?
 
 This change gives you:
+
 - ✅ More flexibility to use any dialog/popover library
 - ✅ Better control over dialog positioning and styling
 - ✅ Reduced bundle size (no longer includes Radix UI popover)
@@ -31,15 +32,17 @@ See [MIGRATION.md](./MIGRATION.md) for detailed migration instructions.
 #### Quick Migration Example
 
 **Before:**
+
 ```tsx
 <LivingHive
   stories={stories}
   dialogConfig={{ position: 'right' }}
-  renderStory={(story) => <div>{story.text}</div>}
+  renderStory={story => <div>{story.text}</div>}
 />
 ```
 
 **After:**
+
 ```tsx
 const [selectedStory, setSelectedStory] = useState(null)
 
@@ -63,24 +66,29 @@ const [selectedStory, setSelectedStory] = useState(null)
 ### Release X.Y.Z - [Title]
 
 #### 🎉 New Features
+
 - Feature 1
 - Feature 2
 
 #### 🐛 Bug Fixes
+
 - Fix 1
 - Fix 2
 
 #### 🔄 Changed
+
 - Change 1
 - Change 2
 
 #### 🗑️ Removed
+
 - Removed feature 1 (if applicable)
 
 #### 📚 Documentation
+
 - Updated docs...
 
 #### 🔗 Links
+
 - [Full Changelog](./CHANGELOG.md)
 - [Migration Guide](./MIGRATION.md) (if breaking changes)
-

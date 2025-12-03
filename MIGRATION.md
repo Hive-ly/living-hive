@@ -11,11 +11,13 @@ The library has been simplified to remove internal dialog/popover management. In
 ### Step 1: Remove Popover Imports
 
 **Before:**
+
 ```tsx
 import { LivingHive, Popover, PopoverTrigger, PopoverContent } from '@hively/living-hive'
 ```
 
 **After:**
+
 ```tsx
 import { LivingHive } from '@hively/living-hive'
 // Use your own dialog/popover component
@@ -25,6 +27,7 @@ import { Dialog } from './components/Dialog'
 ### Step 2: Remove dialogConfig and renderStory Props
 
 **Before:**
+
 ```tsx
 <LivingHive
   stories={stories}
@@ -35,11 +38,12 @@ import { Dialog } from './components/Dialog'
     width: '32rem',
     showOverlay: false,
   }}
-  renderStory={(story) => <CustomStoryView story={story} />}
+  renderStory={story => <CustomStoryView story={story} />}
 />
 ```
 
 **After:**
+
 ```tsx
 <LivingHive
   stories={stories}
@@ -77,7 +81,7 @@ function App() {
           setIsDialogOpen(true)
         }}
       />
-      
+
       {selectedStory && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
@@ -96,6 +100,7 @@ function App() {
 Remove `@radix-ui/react-popover` from your dependencies if you were relying on the library's bundled version. The library no longer includes it.
 
 If you need a dialog/popover solution, install your preferred library:
+
 - `@radix-ui/react-dialog` for dialogs
 - `@radix-ui/react-popover` for popovers
 - Or any other UI library of your choice
@@ -121,4 +126,3 @@ const handleHexClick = useCallback((story, theme) => {
 ### Need Help?
 
 If you encounter issues during migration, please open an issue on GitHub.
-
