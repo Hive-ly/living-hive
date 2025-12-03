@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { LivingHive, DEFAULT_COLOR_PALETTE } from '@hively/living-hive'
 // In dev mode with source code, we need to use Vite's ?worker&url syntax
@@ -8,6 +8,8 @@ import type { BaseStory, Theme } from '@hively/living-hive'
 import mockEmbeddingsData from '../data/mockEmbeddings.json'
 import sampleStoriesData from '../data/sampleStories.json'
 import mockThemesData from '../data/mockThemes.json'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog'
+import { cn } from '../utils/cn'
 
 // Theme Legend Component
 function ThemeLegend({
@@ -22,7 +24,7 @@ function ThemeLegend({
   colorPalette: string[]
 }) {
   // Memoize theme counts and sorted themes to prevent recalculation on every render
-  const { themeCounts, sortedThemes } = React.useMemo(() => {
+  const { themeCounts, sortedThemes } = useMemo(() => {
     const counts = new Map<string, number>()
     themes.forEach(theme => {
       counts.set(theme.id, 0)
@@ -152,7 +154,36 @@ export function BasicExample() {
     return (mockThemesData as Theme[]) || []
   }, [])
 
-  const [storyAssignments, setStoryAssignments] = React.useState<Map<string, string>>(new Map())
+  const [storyAssignments, setStoryAssignments] = useState<Map<string, string>>(new Map())
+  const [selectedStory, setSelectedStory] = useState<BaseStory | null>(null)
+  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Helper function to get theme color
+  const getThemeColor = useCallback(
+    (themeId: string): string => {
+      const themeIndex = themes.findIndex(t => t.id === themeId)
+      if (themeIndex === -1) return DEFAULT_COLOR_PALETTE[0]
+      return DEFAULT_COLOR_PALETTE[themeIndex % DEFAULT_COLOR_PALETTE.length]
+    },
+    [themes],
+  )
+
+  // Stable callback for hex clicks - prevents unnecessary re-renders
+  const handleHexClick = useCallback((story: BaseStory, theme: Theme | null) => {
+    setSelectedStory(story)
+    setSelectedTheme(theme)
+    setIsDialogOpen(true)
+  }, [])
+
+  // Stable callback for errors
+  const handleError = useCallback((error: Error) => {
+    console.error('Error in LivingHive:', error)
+    toast.error('Failed to process stories', {
+      description: error.message,
+      duration: 5000,
+    })
+  }, [])
 
   // Dark charcoal backgrounds
   const charcoalMedium = '#2d2d2d'
@@ -240,13 +271,8 @@ export function BasicExample() {
                 // When consuming from npm, this can be omitted and the library will auto-resolve
                 workerUrl={umapWorkerUrl}
                 onAssignmentsChange={setStoryAssignments}
-                onError={error => {
-                  console.error('Error in LivingHive:', error)
-                  toast.error('Failed to process stories', {
-                    description: error.message,
-                    duration: 5000,
-                  })
-                }}
+                onHexClick={handleHexClick}
+                onError={handleError}
               />
             </div>
           </div>
@@ -263,6 +289,60 @@ export function BasicExample() {
           </div>
         </div>
       </div>
+
+      {/* Story Dialog - Side Panel */}
+      {selectedStory && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent
+            showOverlay={false}
+            className={cn(
+              // Override default centered positioning
+              '!left-auto !right-0 !translate-x-0 !bottom-auto',
+              // Base positioning - fixed on right side of viewport, full height
+              'fixed right-0 top-0 bottom-0 h-screen z-50',
+              // Default width and styling
+              'w-[32rem] max-w-[90vw]',
+              // Charcoal theme styling - slightly lighter than background
+              'backdrop-blur-md',
+              'border-l border-r-0 border-t-0 border-b-0',
+              'rounded-none shadow-2xl',
+              // Animation - slide in from right
+              'data-[state=open]:animate-in data-[state=closed]:animate-out',
+              'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+              'data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full',
+              'overflow-y-auto p-6 flex flex-col items-start',
+              'bg-[#3a3a3a] text-[#f5f5f0] border-[rgba(245,245,240,0.2)]',
+            )}
+            onOpenAutoFocus={e => e.preventDefault()}
+            onInteractOutside={e => {
+              // Prevent closing when clicking on canvas
+              const target = e.target as HTMLElement
+              if (target.closest('canvas')) {
+                e.preventDefault()
+              }
+            }}
+          >
+            <DialogHeader className="flex-shrink-0">
+              {selectedTheme && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-4 h-4 rounded-full border flex-shrink-0"
+                    style={{
+                      backgroundColor: getThemeColor(selectedTheme.id),
+                      borderColor: 'rgba(245, 245, 240, 0.2)',
+                    }}
+                    aria-label={`Theme: ${selectedTheme.label}`}
+                  />
+                  <DialogTitle className="text-xl font-semibold">{selectedTheme.label}</DialogTitle>
+                </div>
+              )}
+            </DialogHeader>
+            <div className="text-base leading-relaxed pt-2 flex-shrink-0">
+              <p className="whitespace-pre-wrap">{selectedStory.text}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

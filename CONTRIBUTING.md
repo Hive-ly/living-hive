@@ -35,6 +35,33 @@ When reporting a bug or requesting a feature, please include:
 - Steps to reproduce or expected behavior.
 - Any relevant logs, stack traces, or screenshots.
 
+## Versioning Policy
+
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (SemVer):
+
+- **MAJOR** (x.0.0): Breaking changes that require migration
+- **MINOR** (0.x.0): New features that are backward compatible
+- **PATCH** (0.0.x): Bug fixes that are backward compatible
+
+### Breaking Changes
+
+When introducing breaking changes:
+
+1. **Document in CHANGELOG.md**: All breaking changes must be clearly documented in the [CHANGELOG.md](./CHANGELOG.md) under a "Breaking Changes" section
+2. **Create migration guide**: If the breaking change is significant, create or update [MIGRATION.md](./MIGRATION.md) with step-by-step instructions
+3. **Deprecation period**: When possible, deprecate APIs before removing them:
+   - Add `@deprecated` JSDoc comments
+   - Add console warnings in development mode
+   - Support deprecated APIs for at least one minor version before removal
+4. **Update version**: Bump the major version number in `package.json`
+
+### Communication
+
+- **CHANGELOG.md**: All changes (breaking, added, changed, removed, fixed) are documented here
+- **MIGRATION.md**: Detailed migration guides for breaking changes
+- **GitHub Releases**: Major versions should include release notes (see [RELEASE_NOTES.md](./RELEASE_NOTES.md) template)
+- **README.md**: Quick reference and links to detailed documentation
+
 ## Code of Conduct
 
 We follow the [Contributor Covenant](https://www.contributor-covenant.org/). Please treat fellow contributors with respect and empathy. Reports of unacceptable behavior can be sent privately to the maintainers.

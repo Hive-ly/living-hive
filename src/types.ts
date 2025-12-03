@@ -44,15 +44,6 @@ export interface PlacementConfig {
   margin: number
 }
 
-// Dialog configuration
-export interface DialogConfig {
-  position?: 'right' | 'left' | 'top' | 'bottom'
-  width?: string
-  maxHeight?: string
-  className?: string
-  showOverlay?: boolean
-}
-
 // Embedding mode
 export type EmbeddingMode = 'client' | 'server'
 
@@ -83,22 +74,20 @@ export interface LivingHiveProps<T extends BaseStory = BaseStory> {
   apiEndpoint?: string
   loading?: boolean
   onHexClick?: (story: Story<T>, theme: Theme | null) => void
-  renderStory?: (story: Story<T>) => React.ReactNode
   onError?: (error: Error) => void
   onThemesChange?: (themes: Theme[]) => void
   onAssignmentsChange?: (assignments: Map<string, string>) => void
   className?: string
   config?: Partial<PlacementConfig>
-  dialogConfig?: DialogConfig
   canvasWidth?: number | string
   canvasHeight?: number | string
   /**
-   * URL to the UMAP worker script. 
-   * 
+   * URL to the UMAP worker script.
+   *
    * **Recommended:** Use your bundler's worker import syntax:
    * - Vite: `import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'`
    * - Webpack 5+: Use worker-loader or Webpack 5's native worker support
-   * 
+   *
    * If not provided, the library will attempt to auto-resolve the worker URL.
    */
   workerUrl?: string | URL

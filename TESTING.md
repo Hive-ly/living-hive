@@ -143,8 +143,6 @@ Make sure you've installed all peer dependencies:
 npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge
 ```
 
-**Note**: `@radix-ui/react-popover` is bundled with the library and does not need to be installed separately.
-
 ### Tailwind CSS not working
 
 Make sure you have Tailwind configured in your project. The library uses Tailwind classes but doesn't bundle Tailwind itself.

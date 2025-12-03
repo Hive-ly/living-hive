@@ -14,7 +14,6 @@ import { useUMAPPlacement } from '../hooks/useUMAPPlacement'
 import { hexToPixel, getHexRadius } from '../utils/hex'
 import { getThemeColor, DEFAULT_COLOR_PALETTE } from '../utils/colors'
 import { HiveShimmer } from './HiveShimmer'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { cn } from '../utils/cn'
 import { assignStoriesToThemes } from '../data/StoryDataGenerator'
 import '../styles/living-hive.css'
@@ -33,13 +32,11 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   colorPalette = DEFAULT_COLOR_PALETTE,
   loading: externalLoading,
   onHexClick,
-  renderStory,
   onError,
   onThemesChange,
   onAssignmentsChange,
   className,
   config,
-  dialogConfig,
   canvasWidth,
   canvasHeight,
   workerUrl,
@@ -70,7 +67,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
   const containerRef = useRef<HTMLDivElement>(null)
   const [hexes, setHexes] = useState<HexData<T>[]>([])
   const [selectedHex, setSelectedHex] = useState<HexData<T> | null>(null)
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const [focusedHexIndex, setFocusedHexIndex] = useState<number | null>(null)
   const [storyAssignments, setStoryAssignments] = useState<Map<string, string>>(new Map())
 
@@ -591,14 +587,12 @@ export function LivingHive<T extends BaseStory = BaseStory>({
       if (foundHex) {
         setSelectedHex(foundHex)
         setFocusedHexIndex(foundIndex)
-        setIsPopoverOpen(true)
         if (onHexClick) {
           onHexClick(foundHex.story, foundHex.theme)
         }
       } else {
         setSelectedHex(null)
         setFocusedHexIndex(null)
-        setIsPopoverOpen(false)
       }
     },
     [hexes, config, onHexClick, zoom, panX, panY],
@@ -634,7 +628,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
           if (focusedHexIndex !== null) {
             const hex = hexes[focusedHexIndex]
             setSelectedHex(hex)
-            setIsPopoverOpen(true)
             if (onHexClick) {
               onHexClick(hex.story, hex.theme)
             }
@@ -644,7 +637,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
           event.preventDefault()
           setSelectedHex(null)
           setFocusedHexIndex(null)
-          setIsPopoverOpen(false)
           break
         default:
           return
@@ -796,83 +788,6 @@ export function LivingHive<T extends BaseStory = BaseStory>({
           )}
         </button>
       </div>
-
-      {/* Dialog for selected hex - fixed on right side */}
-      {selectedHex && (
-        <Dialog open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-          <DialogContent
-            showOverlay={dialogConfig?.showOverlay === true}
-            className={cn(
-              'living-hive__dialog',
-              // Override default centered positioning
-              '!left-auto !right-0 !translate-x-0 !bottom-auto',
-              // Base positioning - fixed on right side of viewport, full height
-              'fixed right-0 top-0 bottom-0 h-screen z-50',
-              // Default width and styling
-              dialogConfig?.width || 'w-[32rem] max-w-[90vw]',
-              // Position variants
-              dialogConfig?.position === 'left' && '!left-0 !right-auto',
-              dialogConfig?.position === 'top' && '!top-0 !bottom-auto !right-0 !left-auto h-auto',
-              dialogConfig?.position === 'bottom' &&
-                '!bottom-0 !top-auto !right-0 !left-auto h-auto',
-              // Charcoal theme styling - slightly lighter than background
-              'backdrop-blur-md',
-              'border-l border-r-0 border-t-0 border-b-0',
-              dialogConfig?.position === 'left' && 'border-l-0 border-r',
-              dialogConfig?.position === 'top' && 'border-l-0 border-r-0 border-t border-b-0',
-              dialogConfig?.position === 'bottom' && 'border-l-0 border-r-0 border-t-0 border-b',
-              'rounded-none shadow-2xl',
-              dialogConfig?.position === 'top' && 'rounded-b-xl',
-              dialogConfig?.position === 'bottom' && 'rounded-t-xl',
-              dialogConfig?.position === 'left' && 'rounded-r-xl',
-              // Animation - slide in from right
-              'data-[state=open]:animate-in data-[state=closed]:animate-out',
-              'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-              'data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full',
-              dialogConfig?.position === 'left' &&
-                'data-[state=closed]:slide-out-to-left-full data-[state=open]:slide-in-from-left-full',
-              dialogConfig?.position === 'top' &&
-                'data-[state=closed]:slide-out-to-top-full data-[state=open]:slide-in-from-top-full',
-              dialogConfig?.position === 'bottom' &&
-                'data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full',
-              'overflow-y-auto p-6 flex flex-col items-start',
-              dialogConfig?.className,
-            )}
-            onOpenAutoFocus={e => e.preventDefault()}
-            onInteractOutside={e => {
-              // Prevent closing when clicking on canvas
-              const target = e.target as HTMLElement
-              if (target.closest('canvas')) {
-                e.preventDefault()
-              }
-            }}
-          >
-            <DialogHeader className="flex-shrink-0">
-              {selectedHex.theme && (
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="living-hive__dialog-theme-dot w-4 h-4 rounded-full border flex-shrink-0"
-                    style={{
-                      backgroundColor: getThemeColor(selectedHex.theme.id, themes, colorPalette),
-                    }}
-                    aria-label={`Theme: ${selectedHex.theme.label}`}
-                  />
-                  <DialogTitle className="living-hive__dialog-title text-xl font-semibold">
-                    {selectedHex.theme.label}
-                  </DialogTitle>
-                </div>
-              )}
-            </DialogHeader>
-            <div className="living-hive__dialog-story text-base leading-relaxed pt-2 flex-shrink-0">
-              {renderStory ? (
-                renderStory(selectedHex.story)
-              ) : (
-                <p className="whitespace-pre-wrap">{selectedHex.story.text}</p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Legend */}
       <div className="living-hive__legend absolute bottom-4 right-4 backdrop-blur-sm rounded-lg px-3 py-2 text-sm z-10">

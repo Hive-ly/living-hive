@@ -1,6 +1,6 @@
 {
   "name": "@hively/living-hive",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "A React library for visualizing interconnected stories using UMAP and hex grid layouts",
   "type": "module",
   "main": "./dist/living-hive-react.umd.cjs",
@@ -80,8 +80,6 @@
     "tailwindcss": "^3.0.0"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-popover": "^1.0.7",
     "clsx": "^2.0.0",
     "lucide-react": "^0.294.0",
     "react": "^18.0.0",
@@ -110,6 +108,7 @@
     "jsdom": "^24.0.0",
     "postcss": "^8.4.32",
     "prettier": "^3.3.2",
+    "@radix-ui/react-dialog": "^1.0.5",
     "tsx": "^4.7.0",
     "typescript": "~5.5.4",
     "vite": "^5.0.8",

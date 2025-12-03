@@ -30,8 +30,6 @@ This library requires the following peer dependencies:
 npm install react react-dom tailwindcss class-variance-authority clsx tailwind-merge
 ```
 
-**Note**: `@radix-ui/react-popover` is bundled with the library and does not need to be installed separately.
-
 ## Quick Start
 
 ### Basic Usage
@@ -102,13 +100,14 @@ export function App() {
 
 ### Configuring the UMAP worker asset
 
-The UMAP algorithm runs in a standalone worker that ships with the package at `dist/workers/umap-worker.js`. 
+The UMAP algorithm runs in a standalone worker that ships with the package at `dist/workers/umap-worker.js`.
 
 **Recommended approach (works with any bundler):**
 
 Pass the worker URL explicitly using your bundler's worker import syntax:
 
 **Vite:**
+
 ```tsx
 import { LivingHive } from '@hively/living-hive'
 // Option 1: Use the source worker path (recommended for Vite)
@@ -116,18 +115,13 @@ import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&
 
 // Option 2: Use the built worker file directly
 // import workerUrl from '@hively/living-hive/workers/umap-worker.js?worker&url'
-
-<LivingHive 
-  stories={stories} 
-  embeddings={embeddings} 
-  themes={themes}
-  workerUrl={workerUrl}
-/>
+;<LivingHive stories={stories} embeddings={embeddings} themes={themes} workerUrl={workerUrl} />
 ```
 
 **Note:** The library's package.json exports support both `umap-placement.worker` and `umap-worker.js` paths. Vite's `?worker&url` query string will work with either.
 
 **Webpack 5+ (native worker support):**
+
 ```tsx
 import { LivingHive } from '@hively/living-hive'
 import Worker from '@hively/living-hive/workers/umap-placement.worker?worker'
@@ -135,22 +129,22 @@ import Worker from '@hively/living-hive/workers/umap-placement.worker?worker'
 // Create worker URL using the Worker constructor
 const workerUrl = new URL(Worker, import.meta.url).href
 
-<LivingHive 
-  stories={stories} 
-  embeddings={embeddings} 
+<LivingHive
+  stories={stories}
+  embeddings={embeddings}
   themes={themes}
   workerUrl={workerUrl}
 />
 ```
 
 **Webpack 4 or older (with worker-loader):**
+
 ```tsx
 import { LivingHive } from '@hively/living-hive'
 // Configure worker-loader in your webpack config
-
-<LivingHive 
-  stories={stories} 
-  embeddings={embeddings} 
+;<LivingHive
+  stories={stories}
+  embeddings={embeddings}
   themes={themes}
   workerUrl={require('@hively/living-hive/workers/umap-worker.js')}
 />
@@ -164,9 +158,9 @@ If your bundler doesn't support worker imports, you can manually copy the worker
 2. Pass the URL:
 
 ```tsx
-<LivingHive 
-  stories={stories} 
-  embeddings={embeddings} 
+<LivingHive
+  stories={stories}
+  embeddings={embeddings}
   themes={themes}
   workerUrl="/workers/umap-worker.js"
 />
@@ -179,6 +173,7 @@ If you don't provide `workerUrl`, the library will attempt to auto-resolve it us
 **Environment variables (alternative):**
 
 You can also set the worker URL via environment variables that your bundler exposes:
+
 - `VITE_LIVING_HIVE_WORKER_URL` (Vite)
 - `NEXT_PUBLIC_LIVING_HIVE_WORKER_URL` (Next.js)
 - `LIVING_HIVE_WORKER_URL` (generic)
@@ -324,77 +319,60 @@ Available variables include:
 | `--living-hive-canvas-border-radius`                                                                                              | Canvas corner radius                          |
 | `--living-hive-focus-ring` / `--living-hive-focus-ring-offset`                                                                    | Focus ring colors for keyboard users          |
 | `--living-hive-toggle-bg` / `--living-hive-toggle-bg-hover` / `--living-hive-toggle-color` / `--living-hive-toggle-border`        | Fullscreen toggle palette                     |
-| `--living-hive-dialog-background` / `--living-hive-dialog-color` / `--living-hive-dialog-border` / `--living-hive-dialog-radius`  | Story dialog surface styling                  |
-| `--living-hive-popover-background` / `--living-hive-popover-color` / `--living-hive-popover-border` / `--living-hive-popover-radius` / `--living-hive-popover-shadow` | Popover component styling                     |
 | `--living-hive-legend-background` / `--living-hive-legend-border` / `--living-hive-legend-color` / `--living-hive-legend-opacity` | Legend chip visuals                           |
 
 You can also supply explicit dimensions via the new `canvasWidth` and `canvasHeight` props. Numbers are treated as pixel values (e.g. `canvasHeight={480}`), while strings accept any CSS length (e.g. `canvasHeight="70vh"`). When these props are omitted, the component falls back to the CSS custom properties so host applications can manage sizing through styles alone.
 
-### Using the Popover Component
+### Handling Hex Clicks
 
-The library exports a customizable `Popover` component built on Radix UI. It uses living-hive theme variables by default, but can be customized via props or CSS variables.
+The `LivingHive` component provides an `onHexClick` callback that fires when a hex is clicked or activated via keyboard navigation. You can use this to implement your own dialog, popover, or modal solution.
 
-**Basic Usage:**
+**Important**: As of version 1.0.0, the component no longer includes built-in dialog/popover components. You must implement your own UI for displaying story details.
+
+#### Basic Example
 
 ```tsx
-import { Popover, PopoverTrigger, PopoverContent } from '@hively/living-hive'
+import { LivingHive } from '@hively/living-hive'
+import { useState, useCallback } from 'react'
+// Import your preferred dialog/popover component
+import { Dialog, DialogContent } from './components/Dialog'
 
-function MyComponent() {
+function App() {
+  const [selectedStory, setSelectedStory] = useState(null)
+  const [selectedTheme, setSelectedTheme] = useState(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Wrap in useCallback to prevent unnecessary re-renders
+  const handleHexClick = useCallback((story, theme) => {
+    setSelectedStory(story)
+    setSelectedTheme(theme)
+    setIsDialogOpen(true)
+  }, [])
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button>Open Popover</button>
-      </PopoverTrigger>
-      <PopoverContent>
-        <p>Popover content here</p>
-      </PopoverContent>
-    </Popover>
+    <>
+      <LivingHive
+        stories={stories}
+        embeddings={embeddings}
+        themes={themes}
+        onHexClick={handleHexClick}
+      />
+      {selectedStory && (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            {selectedTheme && <h2>{selectedTheme.label}</h2>}
+            <p>{selectedStory.text}</p>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   )
 }
 ```
 
-**Customization Options:**
+#### Complete Example
 
-The `PopoverContent` component accepts several customization props:
-
-```tsx
-<PopoverContent
-  // Use living-hive theme (default: true)
-  useLivingHiveTheme={true}
-  // Custom className for additional styling
-  className="w-96"
-  // Standard Radix UI props
-  align="start"
-  sideOffset={8}
-  side="top"
->
-  <p>Custom styled popover</p>
-</PopoverContent>
-```
-
-**Customizing with CSS Variables:**
-
-Override the popover styling using CSS variables:
-
-```css
-.my-custom-popover {
-  --living-hive-popover-background: #ffffff;
-  --living-hive-popover-color: #1a1a1a;
-  --living-hive-popover-border: rgba(0, 0, 0, 0.1);
-  --living-hive-popover-radius: 0.75rem;
-  --living-hive-popover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-```
-
-**Using Tailwind Classes Instead:**
-
-If you prefer to use Tailwind's `bg-popover` and `text-popover-foreground` classes (requires Tailwind config setup), set `useLivingHiveTheme={false}`:
-
-```tsx
-<PopoverContent useLivingHiveTheme={false} className="bg-popover text-popover-foreground">
-  <p>Uses Tailwind popover classes</p>
-</PopoverContent>
-```
+See [`examples/src/examples/BasicExample.tsx`](./examples/src/examples/BasicExample.tsx) for a complete example including a side panel dialog implementation.
 
 ## Generating Embeddings and Themes
 
@@ -547,8 +525,7 @@ The canvas has a visible background and border to show the visualization boundar
 | `openaiApiKey`         | `string`                   | No       | -                                        | Not used by component (only needed when using helper utilities like `StoryDataGenerator`)          |
 | `apiEndpoint`          | `string`                   | No       | -                                        | Custom endpoint used by helper utilities in server-side mode                                       |
 | `colorPalette`         | `string[]`                 | No       | Warm palette                             | Array of hex color strings                                                                         |
-| `onHexClick`           | `(story, theme) => void`   | No       | -                                        | Callback when a hex is clicked                                                                     |
-| `renderStory`          | `(story) => ReactNode`     | No       | Default renderer                         | Custom story renderer for dialog                                                                   |
+| `onHexClick`           | `(story, theme) => void`   | No       | -                                        | Callback when a hex is clicked or activated via keyboard navigation                                |
 | `onError`              | `(error) => void`          | No       | -                                        | Error handler callback                                                                             |
 | `onThemesChange`       | `(themes) => void`         | No       | -                                        | Callback when themes are updated                                                                   |
 | `onAssignmentsChange`  | `(assignments) => void`    | No       | -                                        | Callback when story-to-theme assignments change                                                    |
@@ -556,7 +533,6 @@ The canvas has a visible background and border to show the visualization boundar
 | `canvasWidth`          | `number \| string`         | No       | `100%`                                   | Optional canvas width. Numbers are treated as pixel values; strings can be any CSS length.         |
 | `canvasHeight`         | `number \| string`         | No       | `calc(100vh - 312px)`                    | Optional canvas height. Numbers are treated as pixel values; strings can be any CSS length.        |
 | `config`               | `Partial<PlacementConfig>` | No       | -                                        | Canvas/hex configuration (used as internal defaults for placement math).                           |
-| `dialogConfig`         | `DialogConfig`             | No       | -                                        | Dialog configuration options                                                                       |
 | `workerUrl`            | `string`                   | No       | `prop → env → "/workers/umap-worker.js"` | URL that resolves to the compiled UMAP worker asset.                                               |
 | `throwIfMissingWorker` | `boolean`                  | No       | `true`                                   | When `false`, the component surfaces worker issues via `error` state instead of throwing.          |
 
@@ -613,14 +589,14 @@ const { computePlacement, loading, error } = useUMAPPlacement({
 ### Keyboard Navigation
 
 - **Arrow Keys**: Navigate between hexes
-- **Enter/Space**: Open dialog for focused hex
-- **Escape**: Close dialog and clear selection
+- **Enter/Space**: Trigger `onHexClick` callback for focused hex
+- **Escape**: Clear selection
 
 ### Mouse Controls
 
 - **Scroll Wheel**: Zoom in/out (towards cursor position)
 - **Click and Drag**: Pan around the visualization
-- **Click Hex**: Open dialog with story details
+- **Click Hex**: Trigger `onHexClick` callback with story and theme data
 
 ## Accessibility
 
@@ -800,6 +776,20 @@ The default warm color palette includes:
 - Pre-generated embeddings/themes eliminate API calls entirely
 - Canvas rendering is optimized for smooth interactions
 - Zoom and pan are hardware-accelerated
+
+## Version History
+
+See [CHANGELOG.md](./CHANGELOG.md) for a complete list of changes.
+
+### Breaking Changes in 1.0.0
+
+Version 1.0.0 includes breaking changes to simplify the API and give you more control over dialog/popover implementations:
+
+- **Removed internal Dialog/Popover**: The component no longer manages dialogs internally
+- **Removed Popover exports**: `Popover`, `PopoverTrigger`, `PopoverContent` are no longer available
+- **Removed props**: `dialogConfig` and `renderStory` props have been removed
+
+**Migration required**: If you're upgrading from 0.4.0, see [MIGRATION.md](./MIGRATION.md) for detailed migration instructions.
 
 ## License
 

@@ -19,24 +19,11 @@
   --living-hive-toggle-color: #f5f5f0;
   --living-hive-toggle-border: rgba(245, 245, 240, 0.2);
 
-  /* Dialog */
-  --living-hive-dialog-background: #3a3a3a;
-  --living-hive-dialog-color: #f5f5f0;
-  --living-hive-dialog-border: rgba(245, 245, 240, 0.2);
-  --living-hive-dialog-radius: 0;
-
   /* Legend */
   --living-hive-legend-background: rgba(58, 58, 58, 0.8);
   --living-hive-legend-border: rgba(245, 245, 240, 0.2);
   --living-hive-legend-color: #f5f5f0;
   --living-hive-legend-opacity: 0.9;
-
-  /* Popover */
-  --living-hive-popover-background: #3a3a3a;
-  --living-hive-popover-color: #f5f5f0;
-  --living-hive-popover-border: rgba(245, 245, 240, 0.2);
-  --living-hive-popover-radius: 0.5rem;
-  --living-hive-popover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
 .living-hive__canvas {
@@ -74,27 +61,6 @@
   background-color: var(--living-hive-toggle-bg-hover, rgba(58, 58, 58, 0.95));
 }
 
-.living-hive__dialog {
-  background-color: var(--living-hive-dialog-background, #3a3a3a);
-  color: var(--living-hive-dialog-color, #f5f5f0);
-  border-color: var(--living-hive-dialog-border, rgba(245, 245, 240, 0.2));
-  border-radius: var(--living-hive-dialog-radius, 0);
-  height: 100vh;
-}
-
-.living-hive__dialog-title {
-  color: inherit;
-}
-
-.living-hive__dialog-story {
-  color: var(--living-hive-dialog-color, #f5f5f0);
-  opacity: 0.95;
-}
-
-.living-hive__dialog-theme-dot {
-  border-color: var(--living-hive-dialog-border, rgba(245, 245, 240, 0.2));
-}
-
 .living-hive__legend {
   background-color: var(--living-hive-legend-background, rgba(58, 58, 58, 0.8));
   border: 1px solid var(--living-hive-legend-border, rgba(245, 245, 240, 0.2));
@@ -103,12 +69,4 @@
 
 .living-hive__legend-value {
   opacity: var(--living-hive-legend-opacity, 0.9);
-}
-
-.living-hive__popover {
-  background-color: var(--living-hive-popover-background, #3a3a3a);
-  color: var(--living-hive-popover-color, #f5f5f0);
-  border-color: var(--living-hive-popover-border, rgba(245, 245, 240, 0.2));
-  border-radius: var(--living-hive-popover-radius, 0.5rem);
-  box-shadow: var(--living-hive-popover-shadow, 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2));
 }

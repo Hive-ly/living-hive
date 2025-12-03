@@ -15,8 +15,8 @@ const DEFAULT_CONFIG: PlacementConfig = {
 }
 
 /**
- * Default worker URL fallback. 
- * 
+ * Default worker URL fallback.
+ *
  * Note: It's recommended to explicitly pass workerUrl using your bundler's worker import syntax.
  * This fallback attempts to resolve the worker using import.meta.url, but results may vary
  * depending on how the consumer's bundler processes the library.
@@ -32,7 +32,7 @@ function getDefaultWorkerUrl(): string {
   } catch {
     // Fallback if import.meta is not available or URL construction fails
   }
-  
+
   // Final fallback - assumes worker is at /workers/umap-worker.js
   return '/workers/umap-worker.js'
 }
@@ -41,12 +41,12 @@ export const DEFAULT_WORKER_URL = getDefaultWorkerUrl()
 
 export interface UseUMAPPlacementOptions {
   /**
-   * URL to the UMAP worker script. 
-   * 
+   * URL to the UMAP worker script.
+   *
    * **Recommended:** Use your bundler's worker import syntax to get the URL:
    * - Vite: `import workerUrl from '@hively/living-hive/workers/umap-placement.worker?worker&url'`
    * - Webpack 5+: `new URL('@hively/living-hive/workers/umap-placement.worker?worker', import.meta.url)`
-   * 
+   *
    * If not provided, the library will attempt to auto-resolve the worker URL,
    * but this may not work reliably across all bundlers.
    */
@@ -138,9 +138,8 @@ export function useUMAPPlacement(options?: UseUMAPPlacementOptions): UseUMAPPlac
     try {
       // resolvedWorkerUrl is already a string from resolveWorkerUrl
       // Convert to string explicitly in case it's somehow a URL object
-      const workerUrlString = typeof resolvedWorkerUrl === 'string' 
-        ? resolvedWorkerUrl 
-        : String(resolvedWorkerUrl)
+      const workerUrlString =
+        typeof resolvedWorkerUrl === 'string' ? resolvedWorkerUrl : String(resolvedWorkerUrl)
       worker = new Worker(workerUrlString, { type: 'module' })
     } catch (err) {
       const errorMessage = `Failed to initialize web worker: ${
